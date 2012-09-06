@@ -1,0 +1,89 @@
+
+<HTML>
+
+
+<head>
+<script>
+function drawPolygon() {
+
+		nGon=new nGonObj();
+		nGon.centerX=350;
+		nGon.centerY=winY/2;
+
+		nGon.rotate(0,0,0);
+
+		/************************************************
+		*
+		* Sphere (sorta)
+		*
+		*************************************************/
+		var r=10;
+		var a=0;
+		var radh=0.0;
+		var radv=0.0;
+		var xps=-100;
+		var t=15;
+		var strPoints="";
+		for (t=15;t<360;t+=30) {
+			radv=t*Math.PI/180;
+			r=100*Math.sin(radv);
+			xps=100*Math.cos(radv);
+			for (a=0;a<360;a+=30) {
+				radh=a*Math.PI/180;
+				zp=r*Math.cos(radh);
+				yp=r*Math.sin(radh);
+				strPoints+=xps+","+yp+","+zp+" ";
+			}
+			t+=15;
+		}
+		var yps=0;
+		for (xps=-150;xps<150;xps+=20) strPoints+=xps+",0,0 ";
+		for (yps=-150;yps<150;yps+=20) strPoints+="0,"+yps+",0 ";
+
+
+		strPoints=strPoints.substring(0,strPoints.length-1);
+		nGon.init(strPoints);
+		nGon.setCorpus("Whats he that wishes so?  My cousin Westmoreland? No, my fair cousin:  If we are markd to die, we are enow  To do our country loss; and if to live,  The fewer men, the greater share of honour.  Gods will! I pray thee, wish not one man more.  By Jove, I am not covetous for gold,  Nor care I who doth feed upon my cost;  It yearns me not if men my garments wear;  Such outward things dwell not in my desires:  But if it be a sin to covet honour,  I am the most offending soul alive.  No, faith, my coz, wish not a man from England:  Gods peace! I would not lose so great an honour  As one man more, methinks, would share from me  For the best hope I have. O, do not wish one more!  Rather proclaim it, Westmoreland, through my host,  That he which hath no stomach to this fight,  Let him depart; his passport shall be made  And crowns for convoy put into his purse:  We would not die in that mans company  That fears his fellowship to die with us.  This day is called the feast of Crispian:  He that outlives this day, and comes safe home,  Will stand a tip-toe when the day is named,  And rouse him at the name of Crispian.  He that shall live this day, and see old age,  Will yearly on the vigil feast his neighbours,  And say To-morrow is Saint Crispian:  Then will he strip his sleeve and show his scars.  And say These wounds I had on Crispins day.  Old men forget: yet all shall be forgot,  But hell remember with advantages  What feats he did that day: then shall our names.  Familiar in his mouth as household words  Harry the king, Bedford and Exeter,  Warwick and Talbot, Salisbury and Gloucester,  Be in their flowing cups freshly rememberd.  This story shall the good man teach his son;  And Crispin Crispian shall neer go by,  From this day to the ending of the world,  But we in it shall be rememberd;  We few, we happy few, we band of brothers;  For he to-day that sheds his blood with me  Shall be my brother; be he neer so vile,  This day shall gentle his condition:  And gentlemen in England now a-bed  Shall think themselves accursed they were not here,  And hold their manhoods cheap whiles any speaks  That fought with us upon Saint Crispins day.");
+		nGon.rotate(0,0,0);
+}
+function changeBG(strVal) {
+	setBGColor(strVal);
+}
+function setUpColor() {
+	setBGColor("#FFFFFF");
+	setLinkColor("#000099");
+	setPointColor("#000000");
+	setSteps(10);
+	nGon.rotate(0,0,0);
+}
+
+</script>
+<script src="jf_colorgrad.js"></script>
+<script src="jf_3d.js"></script>
+<script>
+
+</script>
+
+
+<LINK rel="stylesheet" type="text/css" href="style.css">
+
+</head>
+
+
+<body onload="getWinSize();setUpColor();" bgcolor="#FFFFFF">
+
+<a style="text-decoration:none;width:50px;height:20px;font-family:arial;font-size:12px;padding:5px;" href="/index.html">[home]</a>
+<font style="font-family:arial;font-size:12px;">Right-drag to rotate.</font>
+<br><br>
+
+<a style="text-decoration:none;width:50px;height:20px;font-family:arial;font-size:12px;padding:5px;background-color:#ffaaaa;" onmouseover="changeBG('#ffaaaa');" href="#">change</a>
+<a style="text-decoration:none;width:50px;height:20px;font-family:arial;font-size:12px;padding:5px;background-color:#ffffaa;" onmouseover="changeBG('#ffffaa');"  href="#">change</a>
+<a style="text-decoration:none;width:50px;height:20px;font-family:arial;font-size:12px;padding:5px;background-color:#aaffaa;" onmouseover="changeBG('#aaffaa');"  href="#">change</a>
+<a style="text-decoration:none;width:50px;height:20px;font-family:arial;font-size:12px;padding:5px;background-color:#aaffff;" onmouseover="changeBG('#aaffff');"  href="#">change</a>
+<a style="text-decoration:none;width:50px;height:20px;font-family:arial;font-size:12px;padding:5px;background-color:#aaaaff;" onmouseover="changeBG('#aaaaff');"  href="#">change</a>
+<a style="text-decoration:none;width:50px;height:20px;font-family:arial;font-size:12px;padding:5px;background-color:#ffaaff;" onmouseover="changeBG('#ffaaff');"  href="#">change</a>
+<a style="text-decoration:none;width:50px;height:20px;font-family:arial;font-size:12px;padding:5px;background-color:#ffffff;" onmouseover="changeBG('#ffffff');"  href="#">change</a>
+
+<div onmouseup="if (window.event) this.releaseCapture();" id="mousegrabber" style="border:none;font-family:arial;">
+
+</body>
