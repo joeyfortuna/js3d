@@ -109,7 +109,39 @@ function nGonObj() {
 	this.addPoint=NGON_addPoint;
 	this.init=NGON_init;
 	this.setCorpus=NGON_setCorpus;
+	this.initAutomate=NGON_initAutomate;
+	this.wake=NGON_wake;
+	this.autoTimer=0;
+	this.autoX=0;
+	this.autoY=0;
+	this.autoW=0;
+	this.autoH=0;
 	return this;
+}
+
+function NGON_initAutomate(w,h) {
+	this.autoW=w;
+	this.autoH=h;
+	this.wake();
+}
+
+function NGON_wake() {
+	this.autoX=Math.floor(this.autoW*Math.random());
+	this.autoY=Math.floor(this.autoH*Math.random());
+	this.autoTimer=setInterval(this.move,Math.floor(500*Math.random()+100));
+}
+
+function NGON_move() {
+	if (autoX>moveX) moveX++;
+	else if (autoX<moveX) moveX--;
+	
+	if (autoY>moveY) moveY++;
+	else if (autoY<moveY) moveY--;
+	
+	if (autoY==moveY && autoX==moveX) clearInterval(this.autoTimer);
+	
+
+
 }
 
 function NGON_POINT_redraw() {
@@ -334,14 +366,14 @@ function NGON_rotate(xRotate,yRotate,iZoom) {
 
 
 function MoveHandler(e) {
-
-	if(window.event) {
-		  moveX = window.event.x + document.body.scrollLeft;;     //IE
-		  moveY = window.event.y;     //IE
+	e.preventDefault();
+ 	if (e.targetTouches) {
+		moveX = e.targetTouches[0].clientX;
+		moveY = e.targetTouches[0].clientY;		
 	}
-	else{
-		  moveX = e.clientX;     //firefox
-		  moveY = e.clientY;     //firefox
+	else if (e!='automate') {
+		 moveX = e.clientX;     //firefox
+		 moveY = e.clientY;     //firefox			
 	}
 	if (moveX<oldMoveX) xRotate=1;
 	else if(moveX>oldMoveX) xRotate=-1;
@@ -434,6 +466,8 @@ function KeyHandler(e) {
 }
 
 function PressHandler(e) {
+	bRightMouseDown=true;
+	return false;
 //	if(window.event) mousegrabber.setCapture(true);
 	if(window.event) {
 		if (window.event.button==1) bLeftMouseDown=true;
@@ -462,12 +496,15 @@ function doClick(strText) {
 window.onresize = getWinSize;
 document.onmouseup=UpHandler;
 document.addEventListener('mouseup',UpHandler,false);
+document.addEventListener('touchend',UpHandler,true);
 document.onkeydown = KeyHandler;
 document.addEventListener('keydown',KeyHandler,false);
 document.onmousemove = MoveHandler;
 document.addEventListener('mousemove',MoveHandler,false);
+document.addEventListener('touchmove',MoveHandler,true);
 document.onmousedown = PressHandler;
 document.addEventListener('mousedown',PressHandler,false);
+document.addEventListener('touchstart',PressHandler,true);
 document.oncontextmenu=new Function("return false;");
 document.addEventListener('contextmenu',new function(){return false;},false);
 	

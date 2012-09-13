@@ -26,9 +26,9 @@ function drawPolygon() {
 		var strPoints="";
 		for (t=15;t<360;t+=30) {
 			radv=t*Math.PI/180;
-			r=100*Math.sin(radv);
-			xps=100*Math.cos(radv);
-			for (a=0;a<360;a+=30) {
+			r=125*Math.sin(radv);
+			xps=125*Math.cos(radv);
+			for (a=0;a<360;a+=10) {
 				radh=a*Math.PI/180;
 				zp=r*Math.cos(radh);
 				yp=r*Math.sin(radh);
@@ -37,8 +37,8 @@ function drawPolygon() {
 			t+=15;
 		}
 		var yps=0;
-		for (xps=-150;xps<150;xps+=20) strPoints+=xps+",0,0 ";
-		for (yps=-150;yps<150;yps+=20) strPoints+="0,"+yps+",0 ";
+		//for (xps=-150;xps<150;xps+=20) strPoints+=xps+",0,0 ";
+		//for (yps=-150;yps<150;yps+=20) strPoints+="0,"+yps+",0 ";
 
 
 		strPoints=strPoints.substring(0,strPoints.length-1);
