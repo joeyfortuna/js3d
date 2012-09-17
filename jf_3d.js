@@ -20,7 +20,7 @@ var bLeftMouseDown=false;
 var iDistance=525;
 var iFov=590;
 var iLineYDiff=60;
-
+var clickData=null;
 var LinkColor="#000000";
 var PointColor="#000000";
 
@@ -33,8 +33,8 @@ function setPointColor(tpoint) {
 	PointColor=tpoint;
 }
 
-function getWinSize() {
-
+function getWinSize(p) {
+	if (typeof(p)=='undefined') proportionate=false;
 	winX = document.body.clientWidth - 10;
 	winY = document.body.clientHeight - 10;
 	//if (winX>800)  winX=400;
@@ -44,12 +44,12 @@ function getWinSize() {
 		nGon.centerY=winY/2;
 		nGon.clear();
 	}
-	drawPolygon();
+	drawPolygon(p);
 }
 
 
 
-function nGonPointObj(tid,x,y,z,strTxt,fontSize,udf,nGon) {
+function nGonPointObj(tid,x,y,z,strTxt,fontSize,udv,nGon) {
 	if (!strTxt) strTxt="O";
 	this.id=tid;
 	this.x=x;
@@ -59,7 +59,8 @@ function nGonPointObj(tid,x,y,z,strTxt,fontSize,udf,nGon) {
 	this.fontSize=((typeof fontSize=='undefined')?16:fontSize);
 	this.scrX=x;
 	this.scrY=y;
-	this.udf=udf;	
+	this.udv=udv;	
+	this.udf=null;
 	this.text=strTxt;
 	var newObj=document.createElement("div");
 	newObj.id="nGonPoint"+tid;
@@ -76,9 +77,6 @@ function nGonPointObj(tid,x,y,z,strTxt,fontSize,udf,nGon) {
 	newObj.style.left=this.x+"px";
 	var divObj=document.body.appendChild(newObj);
 	this.divObj=divObj;
-	divObj.addEventListener('mousedown',udf,true);
-	divObj.addEventListener('touchstart',udf,true);
-	
 	var linkObj;
 	if (strTxt!="O") {
 		linkObj=document.createElement("a");
@@ -129,6 +127,8 @@ function nGonObj() {
 	this.self=this;
 	this.maxZ=0;
 	this.minZ=0;
+	this.showUDV=false;
+	
 	return this;
 }
 function NGON_setDisplay(val) {
@@ -195,16 +195,47 @@ function NGON_POINT_redrawCanvas() {
 	var canvaselem = document.getElementById("canvas");
 	var ctx = canvaselem.getContext("2d");
 	var canvaswidth = canvaselem.width-0;
-	var canvasheight = canvaselem.height-0;   	
-	ctx.beginPath();
-	//ctx.strokeStyle="#000000";
-	if (this.z>=(nGon.maxZ-2)) ctx.fillStyle="#ff0000";
-	else ctx.fillStyle=getGrad(PointColor,discretizeZ(this.z));
+	var canvasheight = canvaselem.height-0;   
+	var fs=(this.fontSize-(3*discretizeZ(this.z)));	
+	if (this.z>nGon.maxZ-2 && nGon.showUDV) {
+		var fs=20;	
+		ctx.beginPath();		
+		ctx.font=fs+"px Courier";
+		var metrics=ctx.measureText((this.udv)?this.udv:this.text);
+		var width = metrics.width;
+		ctx.fillStyle="#ffffff";
+        	ctx.strokeStyle = 'black';
+        	ctx.rect(Math.floor(this.scrX)-(width/2)-15, Math.floor(this.scrY),width+10,(fs*2));
+		ctx.fill();
+		ctx.stroke();
+		ctx.beginPath();
+		ctx.font=fs+"px Courier";
+		ctx.textBaseline="top";
+		ctx.fillStyle="#ff0000";	
+		ctx.fillText(this.text,Math.floor(this.scrX)-(width/2)-10, Math.floor(this.scrY));
+		if (this.udv) {
+			ctx.beginPath();
+			ctx.font=fs+"px Courier";
+			ctx.textBaseline="top";
+			ctx.fillStyle="#ff0000";	
+			ctx.fillText(this.udv,Math.floor(this.scrX)-(width/2)-10, Math.floor(this.scrY)+fs);
+		}
+		
+	}
+	else {
+		ctx.beginPath();
+		ctx.textBaseline="top";
+		ctx.font=fs+"px Courier";
+		var metrics=ctx.measureText(this.text);
+		var width = metrics.width;
+		ctx.fillStyle=getGrad(PointColor,discretizeZ(this.z));
+		ctx.fillText(this.text,Math.floor(this.scrX)-(width/2)-10, Math.floor(this.scrY));
+		
+	}
+	if (this.udf) this.udf(this.udv)
 	
-	if (this.z>=(nGon.maxZ-2)) ctx.font="50px Verdana";
-	else ctx.font=(24-(3*discretizeZ(this.z)))+"px Verdana";
+	//ctx.strokeStyle="#000000";
   //	ctx.arc(Math.floor(this.scrX), Math.floor(this.scrY), 9-discretizeZ(this.z), 0 , 2 * Math.PI, false);
-	ctx.fillText(this.text,Math.floor(this.scrX), Math.floor(this.scrY));
 	
 	
 	
@@ -275,8 +306,8 @@ function NGON_initArray(arrPoints) {
 		var z=point.z;
 		var fontSize=point.fontSize;
 		var text=point.text;
-		var udf=function() {var k=1};
-		var objPoint= new nGonPointObj(pid+i,this.centerX+x,this.centerY+y,z,text,fontSize,point.udf,this);
+		var objPoint= new nGonPointObj(pid+i,this.centerX+x,this.centerY+y,z,text,fontSize,point.udv,this);
+		if (point.udf) objPoint.udf=point.udf;
 		this.addPoint(objPoint);
 
 	}
@@ -396,6 +427,8 @@ function NGON_rotate(xRotate,yRotate,iZoom) {
 		}
 
 		pointObj.z=newz;
+		if (pointObj.z<this.minZ) this.minZ=pointObj.z;
+		if (pointObj.z>this.maxZ) this.maxZ=pointObj.z;
 		
 	}
 	if (this.displayType=='canvas') {
@@ -508,6 +541,7 @@ function KeyHandler(e) {
 
 function PressHandler(e) {
 	bRightMouseDown=true;
+
 	return false;
 //	if(window.event) mousegrabber.setCapture(true);
 	if(window.event) {
@@ -523,7 +557,14 @@ function PressHandler(e) {
 }
 
 function UpHandler(e) {
-//	if(window.event) mousegrabber.releaseCapture();
+	
+//	if(window.event) mousegrabber.releaseCapture();	
+	if (typeof e.targetTouches=='undefined') {
+		if (e.button==0) {
+			bLeftMouseDown=true;
+		}
+		else if (e.button==1) bRightMouseDown=true;
+	}
 	bLeftMouseDown=false;
 	bRightMouseDown=false;
 	return false;
@@ -535,16 +576,12 @@ function doClick(strText) {
 }
 	
 window.onresize = getWinSize;
-document.onmouseup=UpHandler;
-document.addEventListener('mouseup',UpHandler,false);
+document.addEventListener('mouseup',UpHandler,true);
 document.addEventListener('touchend',UpHandler,true);
-document.onkeydown = KeyHandler;
 document.addEventListener('keydown',KeyHandler,false);
-document.onmousemove = MoveHandler;
-document.addEventListener('mousemove',MoveHandler,false);
+document.addEventListener('mousemove',MoveHandler,true);
 document.addEventListener('touchmove',MoveHandler,true);
-document.onmousedown = PressHandler;
-document.addEventListener('mousedown',PressHandler,false);
+document.addEventListener('mousedown',PressHandler,true);
 document.addEventListener('touchstart',PressHandler,true);
 document.oncontextmenu=new Function("return false;");
 document.addEventListener('contextmenu',new function(){return false;},false);
