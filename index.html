@@ -7,9 +7,8 @@
 function drawPolygon() {
 
 		nGon=new nGonObj();
-		nGon.centerX=350;
+		nGon.centerX=winX/2;
 		nGon.centerY=winY/2;
-
 		nGon.rotate(0,0,0);
 
 		/************************************************
@@ -17,34 +16,29 @@ function drawPolygon() {
 		* Sphere (sorta)
 		*
 		*************************************************/
-		var r=10;
+		var r=250;
 		var a=0;
 		var radh=0.0;
 		var radv=0.0;
 		var xps=-100;
 		var t=15;
 		var strPoints="";
-		for (t=15;t<360;t+=30) {
-			radv=t*Math.PI/180;
-			r=125*Math.sin(radv);
-			xps=125*Math.cos(radv);
-			for (a=0;a<360;a+=10) {
-				radh=a*Math.PI/180;
-				zp=r*Math.cos(radh);
-				yp=r*Math.sin(radh);
-				strPoints+=xps+","+yp+","+zp+" ";
+
+		for (var theta=0;theta<360;theta+=15) {
+			for (var phi=5;phi<180;phi+=10) {
+				var x=r*Math.cos((theta*Math.PI)/180)*Math.sin((phi*Math.PI)/180);
+				var y=r*Math.sin((theta*Math.PI)/180)*Math.sin((phi*Math.PI)/180);
+				var z=r*Math.cos((phi*Math.PI)/180);
+				strPoints+=x+","+y+","+z+" ";
 			}
-			t+=15;
 		}
 		var yps=0;
-		//for (xps=-150;xps<150;xps+=20) strPoints+=xps+",0,0 ";
-		//for (yps=-150;yps<150;yps+=20) strPoints+="0,"+yps+",0 ";
-
 
 		strPoints=strPoints.substring(0,strPoints.length-1);
 		nGon.init(strPoints);
 		nGon.setCorpus("Whats he that wishes so?  My cousin Westmoreland? No, my fair cousin:  If we are markd to die, we are enow  To do our country loss; and if to live,  The fewer men, the greater share of honour.  Gods will! I pray thee, wish not one man more.  By Jove, I am not covetous for gold,  Nor care I who doth feed upon my cost;  It yearns me not if men my garments wear;  Such outward things dwell not in my desires:  But if it be a sin to covet honour,  I am the most offending soul alive.  No, faith, my coz, wish not a man from England:  Gods peace! I would not lose so great an honour  As one man more, methinks, would share from me  For the best hope I have. O, do not wish one more!  Rather proclaim it, Westmoreland, through my host,  That he which hath no stomach to this fight,  Let him depart; his passport shall be made  And crowns for convoy put into his purse:  We would not die in that mans company  That fears his fellowship to die with us.  This day is called the feast of Crispian:  He that outlives this day, and comes safe home,  Will stand a tip-toe when the day is named,  And rouse him at the name of Crispian.  He that shall live this day, and see old age,  Will yearly on the vigil feast his neighbours,  And say To-morrow is Saint Crispian:  Then will he strip his sleeve and show his scars.  And say These wounds I had on Crispins day.  Old men forget: yet all shall be forgot,  But hell remember with advantages  What feats he did that day: then shall our names.  Familiar in his mouth as household words  Harry the king, Bedford and Exeter,  Warwick and Talbot, Salisbury and Gloucester,  Be in their flowing cups freshly rememberd.  This story shall the good man teach his son;  And Crispin Crispian shall neer go by,  From this day to the ending of the world,  But we in it shall be rememberd;  We few, we happy few, we band of brothers;  For he to-day that sheds his blood with me  Shall be my brother; be he neer so vile,  This day shall gentle his condition:  And gentlemen in England now a-bed  Shall think themselves accursed they were not here,  And hold their manhoods cheap whiles any speaks  That fought with us upon Saint Crispins day.");
 		nGon.rotate(0,0,0);
+
 }
 function changeBG(strVal) {
 	setBGColor(strVal);
@@ -60,9 +54,6 @@ function setUpColor() {
 </script>
 <script src="jf_colorgrad.js"></script>
 <script src="jf_3d.js"></script>
-<script>
-
-</script>
 
 
 <LINK rel="stylesheet" type="text/css" href="style.css">
@@ -83,7 +74,18 @@ function setUpColor() {
 <a style="text-decoration:none;width:50px;height:20px;font-family:arial;font-size:12px;padding:5px;background-color:#aaaaff;" onmouseover="changeBG('#aaaaff');"  href="#">change</a>
 <a style="text-decoration:none;width:50px;height:20px;font-family:arial;font-size:12px;padding:5px;background-color:#ffaaff;" onmouseover="changeBG('#ffaaff');"  href="#">change</a>
 <a style="text-decoration:none;width:50px;height:20px;font-family:arial;font-size:12px;padding:5px;background-color:#ffffff;" onmouseover="changeBG('#ffffff');"  href="#">change</a>
+&nbsp;&nbsp;
+<a style="text-decoration:none;width:50px;height:20px;font-family:arial;font-size:12px;padding:5px;background-color:#a5a5a5;" onclick="nGon.initAutomate(winX,winY);"  href="#">auto rotate</a>
+
+&nbsp;&nbsp;
+<a style="text-decoration:none;width:50px;height:20px;font-family:arial;font-size:12px;padding:5px;background-color:#a5a5a5;" onclick="nGon.setDisplay('canvas');"  href="#">canvas display</a>
+<a style="text-decoration:none;width:50px;height:20px;font-family:arial;font-size:12px;padding:5px;background-color:#a5a5a5;" onclick="nGon.setDisplay('div');"  href="#">div display</a>
+
 
 <div onmouseup="if (window.event) this.releaseCapture();" id="mousegrabber" style="border:none;font-family:arial;">
+</div>
+<div style="width:50px;height:50px;font-size:10px;font-family:arial;" id="dbg"></div>
+<canvas id="canvas" width="1400" height="1200" style="border:1px solid #a9a9a9;"></canvas>
 
 </body>
+</html>

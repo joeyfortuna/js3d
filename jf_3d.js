@@ -25,6 +25,7 @@ var LinkColor="#000000";
 var PointColor="#000000";
 
 
+
 function setLinkColor(tlink) {
 	LinkColor=tlink;
 }
@@ -36,8 +37,8 @@ function getWinSize() {
 
 	winX = document.body.clientWidth - 10;
 	winY = document.body.clientHeight - 10;
-	if (winX>800)  winX=400;
-	if (winY>600) winY=600
+	//if (winX>800)  winX=400;
+	//if (winY>600) winY=600
 	if (nGon) {
 		nGon.centerX=winX/2;
 		nGon.centerY=winY/2;
@@ -48,22 +49,26 @@ function getWinSize() {
 
 
 
-function nGonPointObj(tid,x,y,z,strTxt) {
+function nGonPointObj(tid,x,y,z,strTxt,fontSize,udf,nGon) {
 	if (!strTxt) strTxt="O";
 	this.id=tid;
 	this.x=x;
 	this.y=y;
 	this.z=z;
+	this.nGon=nGon;
+	this.fontSize=((typeof fontSize=='undefined')?16:fontSize);
 	this.scrX=x;
 	this.scrY=y;
+	this.udf=udf;	
+	this.text=strTxt;
 	var newObj=document.createElement("div");
 	newObj.id="nGonPoint"+tid;
 	newObj.style.position="absolute";
-	newObj.style.display="inline";
+	newObj.style.display="none";
 	newObj.style.color="red";
 	newObj.style.textAlign="center";
 	newObj.style.fontWeight="bold";
-	newObj.style.fontSize="16px";
+	newObj.style.fontSize=this.fontSize+"px";
 	newObj.style.fontFamily="arial";
 	newObj.style.width="140px";
 	newObj.style.heigth="20px";
@@ -71,6 +76,8 @@ function nGonPointObj(tid,x,y,z,strTxt) {
 	newObj.style.left=this.x+"px";
 	var divObj=document.body.appendChild(newObj);
 	this.divObj=divObj;
+	divObj.addEventListener('mousedown',udf,true);
+	divObj.addEventListener('touchstart',udf,true);
 	
 	var linkObj;
 	if (strTxt!="O") {
@@ -86,7 +93,8 @@ function nGonPointObj(tid,x,y,z,strTxt) {
 	this.linkObj=linkObj;
 	this.divObj.appendChild(this.linkObj)
 	this.txtHolder=linkObj;
-	this.redraw=NGON_POINT_redraw;
+	this.redrawDiv=NGON_POINT_redrawDiv;
+	this.redrawCanvas=NGON_POINT_redrawCanvas;
 	return this;
 }
 
@@ -99,6 +107,7 @@ function nGonObj() {
 	this.centerY=0;
 	this.centerZ=0;
 	this.parallel=false;
+	this.displayType='canvas';
 	this.name="NGonObject";
 	this.nPoints=new Array();
 	this.nFaces=new Array();
@@ -108,120 +117,129 @@ function nGonObj() {
 	this.clear=NGON_clear;
 	this.addPoint=NGON_addPoint;
 	this.init=NGON_init;
+	this.initArray=NGON_initArray;
 	this.setCorpus=NGON_setCorpus;
 	this.initAutomate=NGON_initAutomate;
-	this.wake=NGON_wake;
+	this.setDisplay=NGON_setDisplay;	
 	this.autoTimer=0;
-	this.autoX=0;
-	this.autoY=0;
 	this.autoW=0;
 	this.autoH=0;
+	this.autoX=0;
+	this.autoY=0;
+	this.self=this;
+	this.maxZ=0;
+	this.minZ=0;
 	return this;
+}
+function NGON_setDisplay(val) {
+	var canvas=document.getElementById('canvas');
+	if (val=='canvas') {
+		for (var i=0;i<this.nPoints.length;i++) {
+			var p=this.nPoints[i];
+			p.divObj.style.display='none';
+		}
+		canvas.style.display='block';
+		this.displayType='canvas';
+	}
+	else if (val=='div') {		
+		for (var i=0;i<this.nPoints.length;i++) {
+			var p=this.nPoints[i];
+			p.divObj.style.display='inline-block';
+		}
+		canvas.style.display='none';
+		this.displayType='div';
+		this.rotate(0,0,0);
+	}
+
+	
 }
 
 function NGON_initAutomate(w,h) {
 	this.autoW=w;
 	this.autoH=h;
-	this.wake();
+	wake(this.self);
 }
 
-function NGON_wake() {
-	this.autoX=Math.floor(this.autoW*Math.random());
-	this.autoY=Math.floor(this.autoH*Math.random());
-	this.autoTimer=setInterval(this.move,Math.floor(500*Math.random()+100));
+function wake(ngon) {
+	if (typeof ngon == 'undefined') ngon=nGon;
+	ngon.autoX=Math.floor(ngon.autoW*Math.random());
+	ngon.autoY=Math.floor(ngon.autoH*Math.random());		
+	var intvl=Math.floor(50*Math.random());
+	this.autoTimer=setInterval(function() {move(ngon);},intvl);	
 }
 
-function NGON_move() {
-	if (autoX>moveX) moveX++;
-	else if (autoX<moveX) moveX--;
+function move(ngon) {
 	
-	if (autoY>moveY) moveY++;
-	else if (autoY<moveY) moveY--;
+	if (ngon.autoX>moveX+10) moveX+=(10*Math.random());
+	else if (ngon.autoX<moveX-10) moveX-=(10*Math.random());
 	
-	if (autoY==moveY && autoX==moveX) clearInterval(this.autoTimer);
+	if (ngon.autoY>moveY+10) moveY+=(10*Math.random());
+	else if (ngon.autoY<moveY-10) moveY-=(10*Math.random());
 	
-
-
+	
+	if (ngon.autoY<=moveY+10 && ngon.autoY>=moveY-10 && ngon.autoX<=moveX+10 && ngon.autoX>=moveX-10) {		
+		clearInterval(ngon.autoTimer);		
+		wake(ngon);
+	}
+	else {
+		MoveHandler('automate');	
+	}
+}
+function sortZ(a,b) {
+	if (a.z>b.z) return 1;
+	if (b.z>a.z) return -1;
+	return 0
+}
+ 
+function NGON_POINT_redrawCanvas() {
+	var canvaselem = document.getElementById("canvas");
+	var ctx = canvaselem.getContext("2d");
+	var canvaswidth = canvaselem.width-0;
+	var canvasheight = canvaselem.height-0;   	
+	ctx.beginPath();
+	//ctx.strokeStyle="#000000";
+	if (this.z>=(nGon.maxZ-2)) ctx.fillStyle="#ff0000";
+	else ctx.fillStyle=getGrad(PointColor,discretizeZ(this.z));
+	
+	if (this.z>=(nGon.maxZ-2)) ctx.font="50px Verdana";
+	else ctx.font=(24-(3*discretizeZ(this.z)))+"px Verdana";
+  //	ctx.arc(Math.floor(this.scrX), Math.floor(this.scrY), 9-discretizeZ(this.z), 0 , 2 * Math.PI, false);
+	ctx.fillText(this.text,Math.floor(this.scrX), Math.floor(this.scrY));
+	
+	
+	
+}
+function discretizeZ(z) {
+	if (z<-50) return 6;
+	else if (z<-25) return 5;
+	else if (z<-0) return 4;
+	else if (z<25) return 3;
+	else if (z<50) return 2;
+	else return 1;
 }
 
-function NGON_POINT_redraw() {
-
+function NGON_POINT_redrawDiv() {
+	var zd=discretizeZ(this.z);
+	if (this.linkObj.className.indexOf("grey")>-1) {
+		this.linkObj.className="grey"+zd;
+		this.linkObj.style.color=getGrad(PointColor,zd);
+	}
+	else {
+		this.linkObj.className="nav"+zd;
+		this.linkObj.style.color=getGrad(LinkColor,zd);
+	}
+	this.divObj.style.zIndex=((7-zd)*10)+"";
+	this.divObj.style.fontSize=(13-zd)+"px";
 	
-	if (this.z<-50) {
-		if (this.linkObj.className.indexOf("grey")>-1) {
-			this.linkObj.className="grey6";
-			this.linkObj.style.color=getGrad(PointColor,6);
-		}
-		else {
-			this.linkObj.className="nav6";
-			this.linkObj.style.color=getGrad(LinkColor,6);
-		}
-		this.divObj.style.zIndex="10";
-		this.divObj.style.fontSize="10px";
-		}
-	else if (this.z<-25)  {
-		if (this.linkObj.className.indexOf("grey")>-1) {
-			this.linkObj.className="grey5";
-			this.linkObj.style.color=getGrad(PointColor,5);
-		}
-		else {
-			this.linkObj.className="nav5";
-			this.linkObj.style.color=getGrad(LinkColor,5);
-		}
-		this.divObj.style.zIndex="20";
-		this.divObj.style.fontSize="12px";
-		}
-	else if (this.z<-0)  {
-		if (this.linkObj.className.indexOf("grey")>-1)  {
-			this.linkObj.className="grey4";
-			this.linkObj.style.color=getGrad(PointColor,4);
-		}
-		else {
-			this.linkObj.className="nav4";
-			this.linkObj.style.color=getGrad(LinkColor,4);
-		}
-		this.divObj.style.zIndex="30";
-		this.divObj.style.fontSize="13px";
-		}
-	else if (this.z<-25)  {
-		if (this.linkObj.className.indexOf("grey")>-1)  {
-			this.linkObj.className="grey3";
-			this.linkObj.style.color=getGrad(PointColor,3);
-		}
-		else {
-			this.linkObj.className="nav3";
-			this.linkObj.style.color=getGrad(LinkColor,3);
-		}
-		this.divObj.style.zIndex="40";
-		this.divObj.style.fontSize="14px";
-		}
-	else if (this.z<50)  {
-		if (this.linkObj.className.indexOf("grey")>-1)  {
-			this.linkObj.className="grey2";
-			this.linkObj.style.color=getGrad(PointColor,2);
-		}
-		else {
-			this.linkObj.className="nav2";
-			this.linkObj.style.color=getGrad(LinkColor,2);
-		}
-		this.divObj.style.zIndex="50";
-		this.divObj.style.fontSize="15px";
-		}
-	else  {
-		if (this.linkObj.className.indexOf("grey")>-1) { 
-			this.linkObj.className="grey1";
-			this.linkObj.style.color=getGrad(PointColor,1);
-		}
-		else {
-			this.linkObj.className="nav1";
-			this.linkObj.style.color=getGrad(LinkColor,1);
-		}
-		this.divObj.style.zIndex="60";
-		this.divObj.style.fontSize="16px";
-		}
 	this.divObj.style.left=this.scrX+"px";
 	this.divObj.style.top=this.scrY+"px";
 }
+
+
+function dbg(txt) {
+	document.getElementById("dbg").innerHTML=txt;
+}
+
 function tokenizeText(strText) {	
 	strText = strText.replace(/<!--[\s\S]*?-->/g,"");
 	strText = strText.replace(/(<([^>]+)>)/ig,"");
@@ -238,12 +256,31 @@ function NGON_setCorpus(strText) {
 	this.corpus=tokenizeText(strText).split(" ");
 	this.corpus_index=0;
 	for (i=0;i<this.nPoints.length;i++) {
-		if (i>=this.corpus.length) i=0;
-		this.corpus_index=i;		  
-		this.nPoints[i].txtHolder.innerHTML=this.corpus[i];				
+		var str="";
+		if (this.corpus_index>=this.corpus.length) this.corpus_index=0;
+		else str=this.corpus[this.corpus_index]
+		this.nPoints[i].txtHolder.innerHTML=str;	
+		this.nPoints[i].text=str;				
+		this.corpus_index++;
 	}
 }
 
+function NGON_initArray(arrPoints) {
+	var pid=this.nPoints.length;
+	
+	for (i=0;i<arrPoints.length;i++) {
+		var point=arrPoints[i];
+		var x=point.x;
+		var y=point.y;
+		var z=point.z;
+		var fontSize=point.fontSize;
+		var text=point.text;
+		var udf=function() {var k=1};
+		var objPoint= new nGonPointObj(pid+i,this.centerX+x,this.centerY+y,z,text,fontSize,point.udf,this);
+		this.addPoint(objPoint);
+
+	}
+}
 function NGON_init(strPoints) {
 	var pid=this.nPoints.length;
 	var pointArray=strPoints.split(" ");
@@ -274,6 +311,9 @@ function NGON_clear() {
 
 function NGON_addPoint(obj) {
 	this.nPoints[this.nPoints.length]=obj;
+	if (obj.z<this.minZ) this.minZ=obj.z;
+	if (obj.z>this.maxZ) this.maxZ=obj.z;
+	
 }
 
 
@@ -296,8 +336,7 @@ function NGON_rotate(xRotate,yRotate,iZoom) {
 	var xRotateAngle=(-yRotate)*(2*Math.PI)/180;
 	var yRotateAngle=(-xRotate)*(2*Math.PI)/180;
 	var zRotateAngle=0;//xRotate*(2*Math.PI)/180;
-
-
+	
 	for (i=0;i<this.nPoints.length;i++) {
 		var pointObj=this.nPoints[i];
 		
@@ -343,7 +382,7 @@ function NGON_rotate(xRotate,yRotate,iZoom) {
 
 		// ** DO THIS WITH X/Y VALUES
 		// ** DERIVED FROM PARALLEL ROTATION
-		// ** BUT DON''T UPDATE POINTOBJ.X/Y
+		// ** BUT DON'T UPDATE POINTOBJ.X/Y
 		// ** WITH PROJECTED RESULTS!
 
 		iDistance+=iZoom;
@@ -357,8 +396,24 @@ function NGON_rotate(xRotate,yRotate,iZoom) {
 		}
 
 		pointObj.z=newz;
-		pointObj.redraw();
+		
 	}
+	if (this.displayType=='canvas') {
+		nGon.nPoints.sort(sortZ);
+		var canvaselem = document.getElementById("canvas");
+		var ctx = canvaselem.getContext("2d");
+		var canvaswidth = canvaselem.width-0;
+		var canvasheight = canvaselem.height-0;   
+		ctx.clearRect(0,0,canvaswidth,canvasheight);
+	}
+	
+	for (var i=0;i<nGon.nPoints.length;i++) {
+		var pointObj=this.nPoints[i];
+		if (this.displayType=='canvas') pointObj.redrawCanvas();
+		else pointObj.redrawDiv();
+	}
+	
+	
 	this.transX=0;
 
 }
@@ -366,8 +421,9 @@ function NGON_rotate(xRotate,yRotate,iZoom) {
 
 
 function MoveHandler(e) {
-	e.preventDefault();
- 	if (e.targetTouches) {
+	
+ 	if (e!='automate' && e.targetTouches) {
+ 		e.preventDefault();
 		moveX = e.targetTouches[0].clientX;
 		moveY = e.targetTouches[0].clientY;		
 	}
@@ -375,6 +431,7 @@ function MoveHandler(e) {
 		 moveX = e.clientX;     //firefox
 		 moveY = e.clientY;     //firefox			
 	}
+	
 	if (moveX<oldMoveX) xRotate=1;
 	else if(moveX>oldMoveX) xRotate=-1;
 	else xRotate=0;
@@ -389,27 +446,11 @@ function MoveHandler(e) {
 	oldMoveX=moveX;
 	oldMoveY=moveY;
 
-	if (bRightMouseDown &&  (xRotate!=0 || yRotate!=0)) {
+	if ((bRightMouseDown || e=='automate')&&  (xRotate!=0 || yRotate!=0)) {
 		nGon.rotate(xRotate,yRotate,0);
+		
 	}
-	else if (nGon)  {
-		for (i=1;i<nGon.nPoints.length;i++) {
-			var objPoint=nGon.nPoints[i];
-			if (moveX>objPoint.scrX-10 &&
-				moveX<objPoint.scrX+10 &&
-				moveY>objPoint.scrY-10 &&
-				moveY<objPoint.scrY+10 &&
-				bLeftMouseDown) {
-					objPoint.x=moveX;
-					objPoint.y=moveY;
-					objPoint.scrX=moveX;
-					objPoint.scrY=moveY;
-					objPoint.redraw();
-				}
-
-		}
-
-	}
+	
 }
 
 
