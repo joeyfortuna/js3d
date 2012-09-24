@@ -13,8 +13,8 @@ var moveX=0;
 var oldMoveX=0;
 var moveY=0;
 var oldMoveY=0;
-var xRotate=0;
-var yRotate=0;
+var xgRotate=0;
+var ygRotate=0;
 var bRightMouseDown=false;
 var bLeftMouseDown=false;
 var iDistance=525;
@@ -35,8 +35,9 @@ function setPointColor(tpoint) {
 
 function getWinSize(p) {
 	if (typeof(p)=='undefined') proportionate=false;
-	winX = document.body.clientWidth - 10;
-	winY = document.body.clientHeight - 10;
+	
+	winX = document.getElementById("canvas").clientWidth - 10;
+	winY = document.getElementById("canvas").clientHeight - 10;
 	//if (winX>800)  winX=400;
 	//if (winY>600) winY=600
 	if (nGon) {
@@ -50,7 +51,7 @@ function getWinSize(p) {
 
 
 function nGonPointObj(tid,x,y,z,strTxt,fontSize,udv,nGon) {
-	if (!strTxt) strTxt="O";
+	if (!strTxt) strTxt=null;
 	this.id=tid;
 	this.x=x;
 	this.y=y;
@@ -78,7 +79,7 @@ function nGonPointObj(tid,x,y,z,strTxt,fontSize,udv,nGon) {
 	var divObj=document.body.appendChild(newObj);
 	this.divObj=divObj;
 	var linkObj;
-	if (strTxt!="O") {
+	if (strTxt && strTxt!="O")  {
 		linkObj=document.createElement("a");
 		linkObj.setAttribute('href', "javascript:doClick('"+strTxt+"');");
 		linkObj.className="nav1";
@@ -196,7 +197,7 @@ function NGON_POINT_redrawCanvas() {
 	var ctx = canvaselem.getContext("2d");
 	var canvaswidth = canvaselem.width-0;
 	var canvasheight = canvaselem.height-0;   
-	var fs=(this.fontSize-(3*discretizeZ(this.z)));	
+	var fs=(this.fontSize*(1/discretizeZ(this.z)));	
 	if (this.z>nGon.maxZ-2 && nGon.showUDV) {
 		var fs=20;	
 		ctx.beginPath();		
@@ -215,21 +216,34 @@ function NGON_POINT_redrawCanvas() {
 		ctx.fillText(this.text,Math.floor(this.scrX)-(width/2)-10, Math.floor(this.scrY));
 		if (this.udv) {
 			ctx.beginPath();
-			ctx.font=fs+"px Courier";
-			ctx.textBaseline="top";
-			ctx.fillStyle="#ff0000";	
-			ctx.fillText(this.udv,Math.floor(this.scrX)-(width/2)-10, Math.floor(this.scrY)+fs);
+			if (typeof this.text!='undefined' && this.text!=null && this.text!="") {
+				ctx.font=fs+"px Courier";
+				ctx.textBaseline="top";
+				ctx.fillStyle="#ff0000";	
+				ctx.fillText(this.udv,Math.floor(this.scrX)-(width/2)-10, Math.floor(this.scrY)+fs);
+			} else {
+				ctx.strokeStyle="#000000";
+ 				ctx.arc(Math.floor(this.scrX), Math.floor(this.scrY), 9-discretizeZ(this.z), 0 , 2 * Math.PI, false);
+ 				ctx.stroke();
+			}
 		}
 		
 	}
 	else {
 		ctx.beginPath();
-		ctx.textBaseline="top";
-		ctx.font=fs+"px Courier";
-		var metrics=ctx.measureText(this.text);
-		var width = metrics.width;
-		ctx.fillStyle=getGrad(PointColor,discretizeZ(this.z));
-		ctx.fillText(this.text,Math.floor(this.scrX)-(width/2)-10, Math.floor(this.scrY));
+		if (typeof this.text!='undefined' && this.text!=null && this.text!="") {
+			ctx.textBaseline="top";
+			ctx.font=fs+"px Courier";
+			var metrics=ctx.measureText(this.text);
+			var width = metrics.width;
+			ctx.fillStyle=getGrad(PointColor,discretizeZ(this.z));
+			ctx.fillText(this.text,Math.floor(this.scrX)-(width/2)-10, Math.floor(this.scrY));
+		} 
+		else {
+			ctx.strokeStyle="#000000";
+ 			ctx.arc(Math.floor(this.scrX), Math.floor(this.scrY), 9-discretizeZ(this.z), 0 , 2 * Math.PI, false);
+ 			ctx.stroke();
+		}
 		
 	}
 	if (this.udf) this.udf(this.udv)
@@ -363,7 +377,9 @@ function faceNormal(point1,point2,point3,point4) {
 }
 
 function NGON_rotate(xRotate,yRotate,iZoom) {
-
+	xgRotate=xRotate;
+	ygRotate=yRotate;
+	console.log(xgRotate+","+ygRotate);
 	var xRotateAngle=(-yRotate)*(2*Math.PI)/180;
 	var yRotateAngle=(-xRotate)*(2*Math.PI)/180;
 	var zRotateAngle=0;//xRotate*(2*Math.PI)/180;
@@ -438,12 +454,31 @@ function NGON_rotate(xRotate,yRotate,iZoom) {
 		var canvaswidth = canvaselem.width-0;
 		var canvasheight = canvaselem.height-0;   
 		ctx.clearRect(0,0,canvaswidth,canvasheight);
+		var px=-1;
+		var py=-1;
+		for (var i=0;i<nGon.nPoints.length;i++) {
+			var pointObj=this.nPoints[i];
+			pointObj.redrawCanvas();	
+			ctx.beginPath();
+			ctx.strokeStyle="#ff0000";
+			/*if (i==0) {
+				ctx.moveTo(pointObj.scrX,pointObj.scrY);
+			}
+			else {
+				ctx.moveTo(px,py);
+				ctx.lineTo(pointObj.scrX,pointObj.scrY);
+				ctx.stroke();
+			}
+			px=pointObj.scrX;
+			py=pointObj.scrY;
+			*/
+		}
 	}
-	
-	for (var i=0;i<nGon.nPoints.length;i++) {
-		var pointObj=this.nPoints[i];
-		if (this.displayType=='canvas') pointObj.redrawCanvas();
-		else pointObj.redrawDiv();
+	else {
+		for (var i=0;i<nGon.nPoints.length;i++) {
+			var pointObj=this.nPoints[i];
+			pointObj.redrawDiv();
+		}
 	}
 	
 	
