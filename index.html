@@ -3,118 +3,200 @@
 
 
 <head>
+<script type="text/javascript" src="jquery.min.js"></script>
+
 <script>
-var r=250;
+var r=150;
 var zenithInc=15;
 var azimuthInc=10;
-var display='t';
+var display='a';
 
-function drawPolygon() {
-
-		nGon=new nGonObj();
-		nGon.centerX=winX/2;
-		nGon.centerY=winY/2;
-		nGon.rotate(0,0,0);
-
-		/************************************************
-		*
-		* Sphere (sorta)
-		*
-		*************************************************/
-		drawSphere(r,zenithInc,azimuthInc,display);
-
-
+function initWorld() {
+	winX = document.getElementById("canvas").clientWidth - 10;
+	winY = document.getElementById("canvas").clientHeight - 10;
+	world=new worldObj(winX/2,winY/2);
 }
+var apts=null;
 
-function drawSphere(r,zenithInc,azimuthInc,display) {
-		var strPoints="";
-		if (nGon) delete nGon;
-		nGon=new nGonObj();
-		nGon.centerX=winX/2;
-		nGon.centerY=winY/2;
-		nGon.rotate(0,0,0);
+var objects={};
 
-		for (var theta=0;theta<360;theta+=zenithInc) {
-			for (var phi=5;phi<180;phi+=azimuthInc) {
-				var x=r*Math.cos((theta*Math.PI)/180)*Math.sin((phi*Math.PI)/180);
-				var y=r*Math.sin((theta*Math.PI)/180)*Math.sin((phi*Math.PI)/180);
-				var z=r*Math.cos((phi*Math.PI)/180);
-				strPoints+=x+","+y+","+z+" ";
+function loadObj() {
+	$.get("cube.xml",function(data) {
+		$(data).find("Objects").each(function() {
+			$(this).find("object").each(function() {
+				var id=$(this).attr("id");
+				var verts=$(this).find("vertices").text();
+				var obj={id:id,verts:eval(verts),copy:null,render:{translate:[],scale:[],rotate:[]}};
+				objects[id]=obj;
+			});
+		});
+		$(data).find("Render").each(function() {
+			$(this).find("copy").each(function() {
+				var countid=$(this).attr("id");
+				var idstub=eval($(this).attr("idIsStub"));
+				var numcopies=parseInt($(this).text());
+				objects[countid]["copy"]={idstub:idstub,count:numcopies};
+			});
+			$(this).find("translation").each(function() {
+				var tx={
+					id:$(this).attr("id"),
+					type:$(this).attr("type"),
+					reference:$(this).attr("reference"),
+					index:$(this).attr("index"),
+					loop:($(this).attr("loop")=="true"?true:false),
+					axis:null,
+					value:null
+				};
+				$(this).find("axis").each(function() {
+					tx.axis=$(this).text();
+				});
+				$(this).find("value").each(function() {
+					tx.value=$(this).text();
+				});
+				objects[$(this).attr("id")].render.translate[objects[$(this).attr("id")].render.translate.length]=tx;
+			});
+			$(this).find("scale").each(function() {
+				var sc={
+					id:$(this).attr("id"),
+					type:$(this).attr("type"),
+					reference:$(this).attr("reference"),
+					index:$(this).attr("index"),
+					loop:($(this).attr("loop")=="true"?true:false),
+					axis:null,
+					value:null
+				};
+				$(this).find("axis").each(function() {
+					sc.axis=$(this).text();
+				});
+				$(this).find("value").each(function() {
+					sc.value=$(this).text();
+				});
+				objects[$(this).attr("id")].render.scale[objects[$(this).attr("id")].render.scale.length]=sc;
+
+			});
+			$(this).find("rotate").each(function() {
+				var r={
+					id:$(this).attr("id"),
+					type:$(this).attr("type"),
+					reference:$(this).attr("reference"),
+					index:$(this).attr("index"),
+					loop:($(this).attr("loop")=="true")?true:false,
+				};
+				$(this).find("axis").each(function() {
+					r.axis=$(this).text();
+				});
+				$(this).find("value").each(function() {
+					r.value=$(this).text();
+				});
+				objects[$(this).attr("id")].render.rotate[objects[$(this).attr("id")].render.rotate.length]=r;
+			});
+		});
+		initShapes();
+	 });
+}
+function initShapes() {
+
+	for (var id in objects) {
+		var obj=objects[id];
+		if (obj.copy) {
+			var rend=obj.render;
+			var translate=rend.translate?rend.translate:null;
+			var scale=rend.scale?rend.scale:null;
+			var rotate=rend.rotate?rend.rotate:null;
+
+			var oldObj=null;
+			var txy=0;
+			var scAll=1;
+			for (var k=0;k<obj.copy.count;k++) {
+				var objid=id;
+				if (obj.copy.idstub) objid=objid+(k);
+				var ngon=new nGonObj(objid,world,obj);
+				if (scale && scale.length>0) {
+					for (var j=0;j<scale.length;j++) {
+						var sc=scale[j];
+						if (sc && sc.type=="relative" && sc.reference=="previous" && !sc.loop && k>0) {
+							if (sc.axis=="all") {
+								var v=parseFloat(sc.value);
+								scAll*=v;
+								ngon.initArray(obj.verts,scAll);
+							}
+						}
+					}
+					if (ngon.nPoints.length==0)
+						ngon.initArray(obj.verts,1);
+				}
+				else ngon.initArray(obj.verts,1);
+				world.addNGon(ngon);
+				if (translate && translate.length>0) {
+					for (var j=0;j<translate.length;j++) {
+						var trans=translate[j];
+						if (trans && trans.type=="relative" && trans.reference=="previous" && !trans.loop && k>0) {
+							if (trans.axis=="y") {
+								if (trans.value.indexOf("height")>-1) {
+									txy+=oldObj.getHeight();
+									var xtra=parseInt(trans.value.replace(/.*?(-?[0-9]+)/gi,"$1"));
+									if (!isNaN(xtra)) txy+=xtra;
+								}
+								var tx=txy;
+								if (trans.value.charAt(0)=='-') {
+									tx=-1*tx;
+								}
+								ngon.translate([0,tx, 0, 0]);
+							}
+						}
+					}
+				}
+
+				oldObj=ngon;
 			}
 		}
-		strPoints=strPoints.substring(0,strPoints.length-1);
-		nGon.init(strPoints);
-		if (display=='t')
-			nGon.setCorpus("Whats he that wishes so?  My cousin Westmoreland? No, my fair cousin:  If we are markd to die, we are enow  To do our country loss; and if to live,  The fewer men, the greater share of honour.  Gods will! I pray thee, wish not one man more.  By Jove, I am not covetous for gold,  Nor care I who doth feed upon my cost;  It yearns me not if men my garments wear;  Such outward things dwell not in my desires:  But if it be a sin to covet honour,  I am the most offending soul alive.  No, faith, my coz, wish not a man from England:  Gods peace! I would not lose so great an honour  As one man more, methinks, would share from me  For the best hope I have. O, do not wish one more!  Rather proclaim it, Westmoreland, through my host,  That he which hath no stomach to this fight,  Let him depart; his passport shall be made  And crowns for convoy put into his purse:  We would not die in that mans company  That fears his fellowship to die with us.  This day is called the feast of Crispian:  He that outlives this day, and comes safe home,  Will stand a tip-toe when the day is named,  And rouse him at the name of Crispian.  He that shall live this day, and see old age,  Will yearly on the vigil feast his neighbours,  And say To-morrow is Saint Crispian:  Then will he strip his sleeve and show his scars.  And say These wounds I had on Crispins day.  Old men forget: yet all shall be forgot,  But hell remember with advantages  What feats he did that day: then shall our names.  Familiar in his mouth as household words  Harry the king, Bedford and Exeter,  Warwick and Talbot, Salisbury and Gloucester,  Be in their flowing cups freshly rememberd.  This story shall the good man teach his son;  And Crispin Crispian shall neer go by,  From this day to the ending of the world,  But we in it shall be rememberd;  We few, we happy few, we band of brothers;  For he to-day that sheds his blood with me  Shall be my brother; be he neer so vile,  This day shall gentle his condition:  And gentlemen in England now a-bed  Shall think themselves accursed they were not here,  And hold their manhoods cheap whiles any speaks  That fought with us upon Saint Crispins day.");
-		nGon.rotate(0,15,0);
+
+	}
+	world.rotate(0,0,0);
+	setInterval(ngonAnimation,1000/30);
+}
+function ngonAnimation() {
+	for (var i=0;i<world.ngons.length;i++) {
+		var ngon=world.ngons[i];
+		var obj=world.ngons[i].objectInfo;
+		var rend=obj.render;
+		var translate=rend.translate?rend.translate:null;
+		var scale=rend.scale?rend.scale:null;
+		var rotate=rend.rotate?rend.rotate:null;
+		var k=ngon.id.replace(/[^0-9]*/gi,"");
+		k=parseInt(k);
+		if (rotate && rotate.length>0) {
+			for (var j=0;j<rotate.length;j++) {
+				var rot=rotate[j];
+				if (rot && rot.loop ) {
+					if (!isNaN(parseInt(rot.index)) && k==parseInt(rot.index)) {
+						if (rot.axis=="x") ngon.selfRotate(0,parseInt(rot.value),0);
+						else if (rot.axis=="y") ngon.selfRotate(parseInt(rot.value),0,0);
+						else if (rot.axis=="z") ngon.selfRotate(0,0,parseInt(rot.value));
+					}
+				}
+			}
+		}
+	}
+	world.rotate(0,0,0);
+
 }
 
-function setDisplay(d) {
-	display=d;
-	drawSphere(r,zenithInc,azimuthInc,d);
-}
-function azimuth(inc) {
-	azimuthInc+=inc;
-	if (azimuthInc<=5) azimuthInc=5;
-	drawSphere(r,zenithInc,azimuthInc,display);
 
-}
-
-function zenith(inc) {
-	zenithInc+=inc;
-	if (zenithInc<=5) zenithInc=5;
-	drawSphere(r,zenithInc,azimuthInc,display);
-
-}
-function changeBG(strVal) {
-	setBGColor(strVal);
-}
-function setUpColor() {
-	setBGColor("#FFFFFF");
-	setLinkColor("#000099");
-	setPointColor("#000000");
-	setSteps(10);
-	nGon.rotate(0,1,0);
-}
 
 </script>
-<script src="jf_colorgrad.js"></script>
 <script src="jf_3d.js"></script>
 
 
-<LINK rel="stylesheet" type="text/css" href="style.css">
 
 </head>
 
 
-<body onload="getWinSize();setUpColor();" bgcolor="#FFFFFF">
-
-<a style="text-decoration:none;width:50px;height:20px;font-family:arial;font-size:12px;padding:5px;" href="/index.html">[home]</a>
-<font style="font-family:arial;font-size:12px;">Right-drag to rotate.</font>
-<br><br>
-
-<a style="text-decoration:none;width:50px;height:20px;font-family:arial;font-size:12px;padding:5px;background-color:#ffaaaa;" onmouseover="changeBG('#ffaaaa');" href="#">change</a>
-<a style="text-decoration:none;width:50px;height:20px;font-family:arial;font-size:12px;padding:5px;background-color:#ffffaa;" onmouseover="changeBG('#ffffaa');"  href="#">change</a>
-<a style="text-decoration:none;width:50px;height:20px;font-family:arial;font-size:12px;padding:5px;background-color:#aaffaa;" onmouseover="changeBG('#aaffaa');"  href="#">change</a>
-<a style="text-decoration:none;width:50px;height:20px;font-family:arial;font-size:12px;padding:5px;background-color:#aaffff;" onmouseover="changeBG('#aaffff');"  href="#">change</a>
-<a style="text-decoration:none;width:50px;height:20px;font-family:arial;font-size:12px;padding:5px;background-color:#aaaaff;" onmouseover="changeBG('#aaaaff');"  href="#">change</a>
-<a style="text-decoration:none;width:50px;height:20px;font-family:arial;font-size:12px;padding:5px;background-color:#ffaaff;" onmouseover="changeBG('#ffaaff');"  href="#">change</a>
-<a style="text-decoration:none;width:50px;height:20px;font-family:arial;font-size:12px;padding:5px;background-color:#ffffff;" onmouseover="changeBG('#ffffff');"  href="#">change</>
-&nbsp;&nbsp;
-<a style="text-decoration:none;width:50px;height:20px;font-family:arial;font-size:12px;padding:5px;background-color:#a5a5a5;" onclick="nGon.initAutomate(winX,winY);"  href="#">auto rotate</a>
-<br><br>
-azimuth: <a style="text-decoration:none;width:50px;height:20px;font-family:arial;font-size:12px;padding:5px;background-color:#a5a5a5;" onclick="azimuth(5);"  href="#">up</a>
-&nbsp;<a style="text-decoration:none;width:50px;height:20px;font-family:arial;font-size:12px;padding:5px;background-color:#a5a5a5;" onclick="azimuth(-5);"  href="#">down</a>
-&nbsp;&nbsp;&nbsp;&nbsp;
-zenith: <a style="text-decoration:none;width:50px;height:20px;font-family:arial;font-size:12px;padding:5px;background-color:#a5a5a5;" onclick="zenith(5);"  href="#">up</a>
-&nbsp;<a style="text-decoration:none;width:50px;height:20px;font-family:arial;font-size:12px;padding:5px;background-color:#a5a5a5;" onclick="zenith(-5);"  href="#">down</a>
-&nbsp;&nbsp;&nbsp;&nbsp;
-display: <a style="text-decoration:none;width:50px;height:20px;font-family:arial;font-size:12px;padding:5px;background-color:#a5a5a5;" onclick="setDisplay('t');"  href="#">text</a>
-&nbsp;<a style="text-decoration:none;width:50px;height:20px;font-family:arial;font-size:12px;padding:5px;background-color:#a5a5a5;" onclick="setDisplay('a');"  href="#">arcs</a>
+<body onload="initWorld();loadObj();" bgcolor="#FFFFFF">
 
 
-<div style="width:50px;height:50px;font-size:10px;font-family:arial;" id="dbg"></div>
-<canvas id="canvas" width="1000" height="800" style="border:1px solid #a9a9a9;"></canvas>
+<div style="width:50px;font-size:10px;font-family:arial;" id="dbg"></div>
+<canvas id="canvas" width="719" height="614" style="border:1px solid #a9a9a9;"></canvas>
 
 </body>
 </html>
