@@ -8,102 +8,111 @@
 	ADOPTER INCLUDES THIS NOTICE
 *********************************************/
 /********************************************/
-var nGon;
+//var nGon;
+var world;
 var moveX=0;
 var oldMoveX=0;
 var moveY=0;
 var oldMoveY=0;
-var xgRotate=0;
-var ygRotate=0;
 var bRightMouseDown=false;
 var bLeftMouseDown=false;
 var iDistance=525;
 var iFov=590;
 var iLineYDiff=60;
-var clickData=null;
-var LinkColor="#000000";
-var PointColor="#000000";
 
 
-
-function setLinkColor(tlink) {
-	LinkColor=tlink;
-}
-function setPointColor(tpoint) {
-	PointColor=tpoint;
+function clearCanvas() {
+		var canvaselem = document.getElementById("canvas");
+		var ctx = canvaselem.getContext("2d");
+		var canvaswidth = canvaselem.width-0;
+		var canvasheight = canvaselem.height-0;   
+		ctx.clearRect(0,0,canvaswidth,canvasheight);
 }
 
-function getWinSize(p) {
-	if (typeof(p)=='undefined') proportionate=false;
+function worldObj(x,y) {
+	this.totalXRot=0;
+	this.totalYRot=0;
+	this.totalZRot=0;
 	
-	winX = document.getElementById("canvas").clientWidth - 10;
-	winY = document.getElementById("canvas").clientHeight - 10;
-	//if (winX>800)  winX=400;
-	//if (winY>600) winY=600
-	if (nGon) {
-		nGon.centerX=winX/2;
-		nGon.centerY=winY/2;
-		nGon.clear();
+	this.clear=WORLD_clear;
+	this.addNGon=WORLD_addNGon;
+	this.rotate=WORLD_rotate;
+	this.getNGon=WORLD_getNGon;
+	this.ngons=[];
+	this.centerX=x;
+	this.centerY=y;
+	return this;
+}
+function WORLD_getNGon(ngonid) {
+	for (var i=0;i<this.ngons.length;i++) {	
+		if (this.ngons[i].id==ngonid) return this.ngons[i];
 	}
-	drawPolygon(p);
+	return null;
 }
 
+function WORLD_rotate(x,y,z) {
+	this.totalXRot+=x;
+	this.totalYRot+=y;
+	this.totalZRot+=z;
+	
+	clearCanvas();
+	for (var i=0;i<this.ngons.length;i++) {	
+		var ngon=this.ngons[i];
+		this.ngons[i].maxZ=-1;
+		ngon.worldRotate(this.totalXRot,this.totalYRot,this.totalZRot);
+	}
+	this.ngons.sort(sortNGonZ);
 
+}
+function WORLD_addNGon(ngon) {
+	this.ngons[this.ngons.length]=ngon;
 
-function nGonPointObj(tid,x,y,z,strTxt,fontSize,udv,nGon) {
-	if (!strTxt) strTxt=null;
+}
+function WORLD_clear() {
+	for (var i=0;i<this.ngons.length;i++) {
+		var ngon=this.ngons[i];
+		ngon.clear();
+	}
+}
+
+function nGonPointObj(tid,x,y,z,nGon) {
 	this.id=tid;
+	this.camx=x;
+	this.camy=y;
+	this.camz=z;
 	this.x=x;
 	this.y=y;
 	this.z=z;
-	this.nGon=nGon;
+	this.cartX;
+	this.cartY;
+	this.ngon=nGon;
 	this.fontSize=((typeof fontSize=='undefined')?16:fontSize);
 	this.scrX=x;
 	this.scrY=y;
-	this.udv=udv;	
-	this.udf=null;
-	this.text=strTxt;
-	var newObj=document.createElement("div");
-	newObj.id="nGonPoint"+tid;
-	newObj.style.position="absolute";
-	newObj.style.display="none";
-	newObj.style.color="red";
-	newObj.style.textAlign="center";
-	newObj.style.fontWeight="bold";
-	newObj.style.fontSize=this.fontSize+"px";
-	newObj.style.fontFamily="arial";
-	newObj.style.width="140px";
-	newObj.style.heigth="20px";
-	newObj.style.top=this.y+"px";
-	newObj.style.left=this.x+"px";
-	var divObj=document.body.appendChild(newObj);
-	this.divObj=divObj;
-	var linkObj;
-	if (strTxt && strTxt!="O")  {
-		linkObj=document.createElement("a");
-		linkObj.setAttribute('href', "javascript:doClick('"+strTxt+"');");
-		linkObj.className="nav1";
- 	}
- 	else {
-		linkObj=document.createElement("span");
-		linkObj.className="grey";
- 	}
-	linkObj.innerHTML=strTxt;
-	this.linkObj=linkObj;
-	this.divObj.appendChild(this.linkObj)
-	this.txtHolder=linkObj;
-	this.redrawDiv=NGON_POINT_redrawDiv;
+ 	this.fillStyle="#ababab";
 	this.redrawCanvas=NGON_POINT_redrawCanvas;
 	return this;
 }
 
+function nGonFaceObj(p1,p2,p3) {
+	this.fillStyle="#99bfde";
+	this.myname="shape";
+	this.p1=p1;
+	this.p2=p2;
+	this.p3=p3;
+	return this;
+}
 
-function nGonObj() {
-	this.corpus=null;
-	this.corpus_index=-1;
+
+function nGonObj(id,world,objectInfo) {
+	if (typeof objectInfo=='undefined') this.objectInfo=null;
+	else this.objectInfo=objectInfo;
+	this.id=id;
+	this.animData=null;
+	this.world=world;
 	this.transX=0;
-	this.centerX=0;
-	this.centerY=0;
+	this.centerX=world.centerX;
+	this.centerY=world.centerY;
 	this.centerZ=0;
 	this.parallel=false;
 	this.displayType='canvas';
@@ -112,148 +121,121 @@ function nGonObj() {
 	this.nFaces=new Array();
 	this.angleDivisor=0;
 	this.angle=0;
+	this.objectInfo=objectInfo;
 	this.rotate=NGON_rotate;
+	this.worldRotate=NGON_worldRotate;
+	this.selfRotate=NGON_selfRotate;
+	this.rotate=NGON_rotate;
+	this.getNewMids=NGON_getNewMids;
 	this.clear=NGON_clear;
 	this.addPoint=NGON_addPoint;
-	this.init=NGON_init;
+	this.addFace=NGON_addFace;
+	this.drawFaces=NGON_drawFaces;
+	this.translate=NGON_translate;
+	this.getHeight=NGON_getHeight;
+	this.midx=0;
+	this.midy=0;
+	this.midz=0;
 	this.initArray=NGON_initArray;
-	this.setCorpus=NGON_setCorpus;
-	this.initAutomate=NGON_initAutomate;
-	this.setDisplay=NGON_setDisplay;	
-	this.autoTimer=0;
-	this.autoW=0;
-	this.autoH=0;
-	this.autoX=0;
-	this.autoY=0;
 	this.self=this;
 	this.maxZ=0;
 	this.minZ=0;
-	this.showUDV=false;
 	
 	return this;
 }
-function NGON_setDisplay(val) {
-	var canvas=document.getElementById('canvas');
-	if (val=='canvas') {
-		for (var i=0;i<this.nPoints.length;i++) {
-			var p=this.nPoints[i];
-			p.divObj.style.display='none';
-		}
-		canvas.style.display='block';
-		this.displayType='canvas';
-	}
-	else if (val=='div') {		
-		for (var i=0;i<this.nPoints.length;i++) {
-			var p=this.nPoints[i];
-			p.divObj.style.display='inline-block';
-		}
-		canvas.style.display='none';
-		this.displayType='div';
-		this.rotate(0,0,0);
-	}
 
-	
+function NGON_getHeight() {
+	var minY=Infinity;
+	var maxY=-Infinity;
+	for (var i=0;i<this.nPoints.length;i++) {	
+		var point=this.nPoints[i];
+		if (point.y<minY) minY=point.y;
+		if (point.y>maxY) maxY=point.y;	
+	}
+	return Math.abs(maxY-minY);
+
+}
+function NGON_translate(vec) {
+	for (i=0;i<this.nPoints.length;i++) {		
+		var point=this.nPoints[i];
+		point.x+=vec[0];
+		point.y+=vec[1];
+		point.z+=vec[2];
+		point.cartX=parseInt(point.x);
+		point.cartY=parseInt(point.y);	
+	}
+	this.getNewMids();
 }
 
-function NGON_initAutomate(w,h) {
-	this.autoW=w;
-	this.autoH=h;
-	wake(this.self);
+function sortNGonZ(a,b) {
+	if (a.maxZ>b.maxZ) return 1;
+	if (b.maxZ>a.maxZ) return -1;
+	return 0
 }
 
-function wake(ngon) {
-	if (typeof ngon == 'undefined') ngon=nGon;
-	ngon.autoX=Math.floor(ngon.autoW*Math.random());
-	ngon.autoY=Math.floor(ngon.autoH*Math.random());		
-	var intvl=Math.floor(50*Math.random());
-	this.autoTimer=setInterval(function() {move(ngon);},intvl);	
-}
-
-function move(ngon) {
-	
-	if (ngon.autoX>moveX+10) moveX+=(10*Math.random());
-	else if (ngon.autoX<moveX-10) moveX-=(10*Math.random());
-	
-	if (ngon.autoY>moveY+10) moveY+=(10*Math.random());
-	else if (ngon.autoY<moveY-10) moveY-=(10*Math.random());
-	
-	
-	if (ngon.autoY<=moveY+10 && ngon.autoY>=moveY-10 && ngon.autoX<=moveX+10 && ngon.autoX>=moveX-10) {		
-		clearInterval(ngon.autoTimer);		
-		wake(ngon);
-	}
-	else {
-		MoveHandler('automate');	
-	}
-}
-function sortZ(a,b) {
-	if (a.z>b.z) return 1;
-	if (b.z>a.z) return -1;
+function sortPointZ(a,b) {
+	if (a.camz>b.camz) return 1;
+	if (b.camz>a.camz) return -1;
 	return 0
 }
  
+function sortFaceZ(a,b) {	
+	var p11=a.p1;
+	var p12=a.p2;
+	var p13=a.p3;
+	var z1=Math.max(p11.camz,p12.camz,p13.camz);
+	var p21=b.p1;
+	var p22=b.p2;
+	var p23=b.p3;
+	var z2=Math.max(p21.camz,p22.camz,p23.camz);
+	if (z1>z2) return 1;
+	else if (z1<z2) return -1;
+	else return 0;
+}
+
+function NGON_drawFaces () {
+	var strPath="";
+	var dprod=0;
+	var canvaselem = document.getElementById("canvas");
+	var c2 = canvaselem.getContext('2d');
+	this.nFaces.sort(sortFaceZ);
+	for (i=0;i<this.nFaces.length;i++) {
+		var faceObj=this.nFaces[i];
+		var p1=faceObj.p1;
+		var p2=faceObj.p2;
+		var p3=faceObj.p3;
+		var tZ=p1.camz+p2.camz+p3.camz;
+		if (tZ>this.maxZ) this.maxZ=tZ;
+		dprod=faceNormal(faceObj); 
+		if (dprod>0) {			
+			c2.fillStyle = faceObj.fillStyle;
+			c2.strokeStyle="#999999";
+			c2.beginPath();
+			c2.moveTo(p1.scrX,p1.scrY);
+			c2.lineTo(p2.scrX,p2.scrY);
+			c2.lineTo(p3.scrX,p3.scrY);
+			c2.closePath();
+			c2.fill();
+			c2.stroke();
+		}
+		
+	}
+}
+
 function NGON_POINT_redrawCanvas() {
 	var canvaselem = document.getElementById("canvas");
 	var ctx = canvaselem.getContext("2d");
 	var canvaswidth = canvaselem.width-0;
 	var canvasheight = canvaselem.height-0;   
 	var fs=(this.fontSize*(1/discretizeZ(this.z)));	
-	if (this.z>nGon.maxZ-2 && nGon.showUDV) {
-		var fs=20;	
-		ctx.beginPath();		
-		ctx.font=fs+"px Courier";
-		var metrics=ctx.measureText((this.udv)?this.udv:this.text);
-		var width = metrics.width;
-		ctx.fillStyle="#ffffff";
-        	ctx.strokeStyle = 'black';
-        	ctx.rect(Math.floor(this.scrX)-(width/2)-15, Math.floor(this.scrY),width+10,(fs*2));
-		ctx.fill();
-		ctx.stroke();
-		ctx.beginPath();
-		ctx.font=fs+"px Courier";
-		ctx.textBaseline="top";
-		ctx.fillStyle="#ff0000";	
-		ctx.fillText(this.text,Math.floor(this.scrX)-(width/2)-10, Math.floor(this.scrY));
-		if (this.udv) {
-			ctx.beginPath();
-			if (typeof this.text!='undefined' && this.text!=null && this.text!="") {
-				ctx.font=fs+"px Courier";
-				ctx.textBaseline="top";
-				ctx.fillStyle="#ff0000";	
-				ctx.fillText(this.udv,Math.floor(this.scrX)-(width/2)-10, Math.floor(this.scrY)+fs);
-			} else {
-				ctx.strokeStyle="#000000";
- 				ctx.arc(Math.floor(this.scrX), Math.floor(this.scrY), 9-discretizeZ(this.z), 0 , 2 * Math.PI, false);
- 				ctx.stroke();
-			}
-		}
+	ctx.beginPath();
+	ctx.fillStyle="#000000";
+	var r=2;
+	ctx.arc(Math.floor(this.scrX), Math.floor(this.scrY), r, 0 , 2 * Math.PI, false);
+	ctx.fill();
 		
-	}
-	else {
-		ctx.beginPath();
-		if (typeof this.text!='undefined' && this.text!=null && this.text!="") {
-			ctx.textBaseline="top";
-			ctx.font=fs+"px Courier";
-			var metrics=ctx.measureText(this.text);
-			var width = metrics.width;
-			ctx.fillStyle=getGrad(PointColor,discretizeZ(this.z));
-			ctx.fillText(this.text,Math.floor(this.scrX)-(width/2)-10, Math.floor(this.scrY));
-		} 
-		else {
-			ctx.strokeStyle="#000000";
- 			ctx.arc(Math.floor(this.scrX), Math.floor(this.scrY), 9-discretizeZ(this.z), 0 , 2 * Math.PI, false);
- 			ctx.stroke();
-		}
-		
-	}
-	if (this.udf) this.udf(this.udv)
-	
-	//ctx.strokeStyle="#000000";
-  //	ctx.arc(Math.floor(this.scrX), Math.floor(this.scrY), 9-discretizeZ(this.z), 0 , 2 * Math.PI, false);
-	
-	
-	
 }
+
 function discretizeZ(z) {
 	if (z<-50) return 6;
 	else if (z<-25) return 5;
@@ -263,96 +245,70 @@ function discretizeZ(z) {
 	else return 1;
 }
 
-function NGON_POINT_redrawDiv() {
-	var zd=discretizeZ(this.z);
-	if (this.linkObj.className.indexOf("grey")>-1) {
-		this.linkObj.className="grey"+zd;
-		this.linkObj.style.color=getGrad(PointColor,zd);
-	}
-	else {
-		this.linkObj.className="nav"+zd;
-		this.linkObj.style.color=getGrad(LinkColor,zd);
-	}
-	this.divObj.style.zIndex=((7-zd)*10)+"";
-	this.divObj.style.fontSize=(13-zd)+"px";
-	
-	this.divObj.style.left=this.scrX+"px";
-	this.divObj.style.top=this.scrY+"px";
+function dbg(txt,clear) {
+	var db=document.getElementById('dbg');
+	if (clear) db.innerHTML='';
+	db.innerHTML=db.innerHTML+txt;
 }
-
-
-function dbg(txt) {
-	document.getElementById("dbg").innerHTML=txt;
-}
-
-function tokenizeText(strText) {	
-	strText = strText.replace(/<!--[\s\S]*?-->/g,"");
-	strText = strText.replace(/(<([^>]+)>)/ig,"");
-	strText = strText.replace(/\n+/ig," ");
-	strText = strText.replace(/\s+/ig," ");
-	strText = strText.replace(/&[a-z]+;/ig,"");
-	strText = strText.replace(/\s{3,}/g," ");		
-	strText = strText.replace(/[\'\.,-\/#!$%\^&\*;:{}=\-_`~()]/g," ");	
-	strText = strText.replace(/[ ]+/g," ").toLowerCase();	
-	return strText;
-}
-
-function NGON_setCorpus(strText) {
-	this.corpus=tokenizeText(strText).split(" ");
-	this.corpus_index=0;
+function NGON_getNewMids() {
+	var extx=[Infinity,-Infinity];
+	var exty=[Infinity,-Infinity];
+	var extz=[Infinity,-Infinity];
 	for (i=0;i<this.nPoints.length;i++) {
-		var str="";
-		if (this.corpus_index>=this.corpus.length) this.corpus_index=0;
-		else str=this.corpus[this.corpus_index]
-		this.nPoints[i].txtHolder.innerHTML=str;	
-		this.nPoints[i].text=str;				
-		this.corpus_index++;
+		var point=this.nPoints[i];
+		var x=point.x;
+		if (x>extx[1]) extx[1]=x;
+		if (x<extx[0]) extx[0]=x;		
+		var y=point.y;
+		if (y>exty[1]) exty[1]=y;
+		if (y<exty[0]) exty[0]=y;		
+		var z=point.z;
+		if (z>extz[1]) extz[1]=z;
+		if (z<extz[0]) extz[0]=z;	
 	}
+	this.midx=extx[0]+(Math.abs(extx[1]-extx[0])/2);
+	this.midy=exty[0]+(Math.abs(exty[1]-exty[0])/2);
+	this.midz=extz[0]+(Math.abs(extz[1]-extz[0])/2);
 }
 
-function NGON_initArray(arrPoints) {
+function NGON_initArray(arrPoints,scale) {
+	if (typeof scale=='undefined') scale=1;
 	var pid=this.nPoints.length;
-	
 	for (i=0;i<arrPoints.length;i++) {
 		var point=arrPoints[i];
-		var x=point.x;
-		var y=point.y;
-		var z=point.z;
-		var fontSize=point.fontSize;
-		var text=point.text;
-		var objPoint= new nGonPointObj(pid+i,this.centerX+x,this.centerY+y,z,text,fontSize,point.udv,this);
-		if (point.udf) objPoint.udf=point.udf;
+		var x=point.x*scale;
+		var y=point.y*scale;
+		var z=point.z*scale;
+		var objPoint= new nGonPointObj(pid+i,this.centerX+x,this.centerY+y,z,this);
+		objPoint.fillStyle=point.fillStyle;
+		objPoint.cartX=parseInt(x);
+		objPoint.cartY=parseInt(y);		
 		this.addPoint(objPoint);
-
+		if ((i+1)%3==0) {			
+			var objFace = new nGonFaceObj(this.nPoints[i], this.nPoints[i-1], this.nPoints[i-2]);
+			objFace.fillStyle=point.fillStyle;
+			this.addFace(objFace);
+		}
 	}
-}
-function NGON_init(strPoints) {
-	var pid=this.nPoints.length;
-	var pointArray=strPoints.split(" ");
-	for (i=0;i<pointArray.length;i++) {
-		var coorArray=pointArray[i].split(",");
-		var objPoint= new nGonPointObj(pid+i,this.centerX+parseInt(coorArray[0]),this.centerY+parseInt(coorArray[1]),parseInt(coorArray[2]));
-		this.addPoint(objPoint);
-
-	}
+	this.getNewMids();
 }
 function NGON_clear() {
 	for (i=this.nPoints.length-1;i>=0;i--) {
-		this.nPoints[i].divObj.style.display="none";
-		this.nPoints[i].divObj=null;
-		this.nPoints.pop(i);
+		this.nPoints.splice(i,1);
 	}
-	while (this.nPoints.length>0) this.nPoints.pop(0);
+	while (this.nPoints.length>0) this.nPoints.splice(0);
 	for (i=this.nFaces.length-1;i>=0;i--) {
-		this.nFaces[i].shape.style.display="none";
-		this.nFaces[i].shape=null;
 		this.nFaces[i]=null;
-		this.nFaces.pop(i);
+		this.nFaces.splice(i,1);
 	}
-	while (this.nFaces.length>0) this.nFaces.pop(0);
+	while (this.nFaces.length>0) this.nFaces.splice(0);
 }
 
 
+
+function NGON_addFace(obj) {
+	this.nFaces[this.nFaces.length]=obj;
+}
 
 function NGON_addPoint(obj) {
 	this.nPoints[this.nPoints.length]=obj;
@@ -362,37 +318,67 @@ function NGON_addPoint(obj) {
 }
 
 
-function faceNormal(point1,point2,point3,point4) {
-		var sx1=point1.scrX-point2.scrX;
-		var sy1=point1.scrY-point2.scrY;
-		var sz1=point1.z-point2.z;
-		var sx2=point3.scrX-point4.scrX;
-		var sy2=point3.scrY-point4.scrY;
-		var sz2=point3.z-point4.z;
-		var dpx = sy1 * sz2 - sy2 * sz1;
-		var dpy = sx2 * sz1 - sx1 * sz2;
-		var dpz= sx1 * sy2 - sx2 * sy1;
-	    var dprod = 0 * dpx + 0 * dpy + iFov*(dpz/iDistance);
-	    return dprod;
+function faceNormal(faceObj) {
+	var point1,point2,point3,point4;
+	
+	point1=faceObj.p1;
+	point2=faceObj.p2;
+	point3=faceObj.p2;
+	point4=faceObj.p3;
+
+
+	var sx1=point1.cartX-point2.cartX;
+	var sy1=point1.cartY-point2.cartY;
+	var sz1=point1.camz-point2.camz;
+
+	var sx2=point3.cartX-point4.cartX;
+	var sy2=point3.cartY-point4.cartY;
+	var sz2=point3.camz-point4.camz;
+
+	var dpx = sy1 * sz2 - sy2 * sz1;
+	var dpy = sx1 * sz2 - sx2 * sz1;
+	var dpz = sx1 * sy2 - sx2 * sy1;
+	var dprod = 0 * dpx + 0 * dpy + iFov*(dpz/iDistance);
+	return dprod;
 }
 
-function NGON_rotate(xRotate,yRotate,iZoom) {
-	xgRotate=xRotate;
-	ygRotate=yRotate;
-	console.log(xgRotate+","+ygRotate);
+function NGON_selfRotate(xRotate,yRotate,iZoom) {
+	this.rotate(xRotate,yRotate,iZoom,false);
+}
+
+function NGON_worldRotate(xRotate,yRotate,iZoom) {
+	this.rotate(xRotate,yRotate,iZoom,true);
+}
+
+
+function NGON_rotate(xRotate,yRotate,zRotate,bWorld) {
+	var cx,cy,cz;
+	if (bWorld) {
+		cx=this.centerX;
+		cy=this.centerY;
+		cz=this.centerZ;
+	}
+	else {
+		/*cx=this.centerX;
+		cy=this.centerY;
+		cz=this.centerZ;*/
+		cx=this.midx;
+		cy=this.midy;
+		cz=this.midz;
+	
+	}
 	var xRotateAngle=(-yRotate)*(2*Math.PI)/180;
 	var yRotateAngle=(-xRotate)*(2*Math.PI)/180;
-	var zRotateAngle=0;//xRotate*(2*Math.PI)/180;
+	var zRotateAngle=(-zRotate)*(2*Math.PI)/180;
 	
 	for (i=0;i<this.nPoints.length;i++) {
 		var pointObj=this.nPoints[i];
 		
 		// Re-tool for the 0-MAX_X, 0 - MAX_Y screen coords
-		var x=pointObj.x-this.centerX;
-		var y=this.centerY-pointObj.y;
-
+		var x=pointObj.x-cx;
+		var y=cy-pointObj.y;
 		var z=pointObj.z;
-
+		
 		var newy=y;
 		var newx=x;
 		var newz=z;
@@ -421,9 +407,15 @@ function NGON_rotate(xRotate,yRotate,iZoom) {
 
 
 		// PARALLEL PROJECTION //
-		pointObj.x=newx+this.centerX;
-		pointObj.y=this.centerY-newy;
-
+		if (bWorld) {
+			pointObj.camx=newx+cx;
+			pointObj.camy=cy-newy;
+		}
+		else {
+			pointObj.x=newx+cx;
+			pointObj.y=cy-newy;
+		
+		}
 
 		// PERSPECTIVE PROJECTION //
 
@@ -432,58 +424,29 @@ function NGON_rotate(xRotate,yRotate,iZoom) {
 		// ** BUT DON'T UPDATE POINTOBJ.X/Y
 		// ** WITH PROJECTED RESULTS!
 
-		iDistance+=iZoom;
-		if (!this.parallel) {
-			pointObj.scrX = ((iFov*newx) / (iDistance-(newz+this.centerZ))) + (this.centerX);
-	  		pointObj.scrY = (this.centerY) - ((iFov*newy) / (iDistance-(newz+this.centerZ)));
+		//iDistance+=iZoom;
+		
+		if (bWorld) {
+			pointObj.scrX = ((iFov*newx) / (iDistance-(newz+cz))) + (cx);
+			pointObj.scrY = (cy) - ((iFov*newy) / (iDistance-(newz+cz)));
+			pointObj.cartX=pointObj.scrX-cx;
+			pointObj.cartY=pointObj.scrY-cy;
+			pointObj.cartY=-newy;
+			pointObj.camz=newz;		
 		}
 		else {
-			pointObj.scrX=pointObj.x;
-			pointObj.scrY=pointObj.y;
+			pointObj.z=newz;		
 		}
-
-		pointObj.z=newz;
-		if (pointObj.z<this.minZ) this.minZ=pointObj.z;
-		if (pointObj.z>this.maxZ) this.maxZ=pointObj.z;
-		
 	}
-	if (this.displayType=='canvas') {
-		nGon.nPoints.sort(sortZ);
-		var canvaselem = document.getElementById("canvas");
-		var ctx = canvaselem.getContext("2d");
-		var canvaswidth = canvaselem.width-0;
-		var canvasheight = canvaselem.height-0;   
-		ctx.clearRect(0,0,canvaswidth,canvasheight);
-		var px=-1;
-		var py=-1;
-		for (var i=0;i<nGon.nPoints.length;i++) {
+	if (bWorld) {
+		this.nPoints.sort(sortPointZ);
+		for (var i=0;i<this.nPoints.length;i++) {
 			var pointObj=this.nPoints[i];
 			pointObj.redrawCanvas();	
-			ctx.beginPath();
-			ctx.strokeStyle="#ff0000";
-			/*if (i==0) {
-				ctx.moveTo(pointObj.scrX,pointObj.scrY);
-			}
-			else {
-				ctx.moveTo(px,py);
-				ctx.lineTo(pointObj.scrX,pointObj.scrY);
-				ctx.stroke();
-			}
-			px=pointObj.scrX;
-			py=pointObj.scrY;
-			*/
 		}
+		this.drawFaces();	
+		this.transX=0;
 	}
-	else {
-		for (var i=0;i<nGon.nPoints.length;i++) {
-			var pointObj=this.nPoints[i];
-			pointObj.redrawDiv();
-		}
-	}
-	
-	
-	this.transX=0;
-
 }
 
 
@@ -515,7 +478,8 @@ function MoveHandler(e) {
 	oldMoveY=moveY;
 
 	if ((bRightMouseDown || e=='automate')&&  (xRotate!=0 || yRotate!=0)) {
-		nGon.rotate(xRotate,yRotate,0);
+	//dbg(world.rotate)
+		world.rotate(xRotate,yRotate,0);
 		
 	}
 	
@@ -524,61 +488,21 @@ function MoveHandler(e) {
 
 
 function KeyHandler(e) {
-	if(window.event)
-		  key = window.event.keyCode;     //IE
-	else
-		  key = e.which;     //firefox
-	switch(key) {
-	case 51:
-		nGon.clear();
-		nGon.init();
-	break;
-	case 16: // strafe left;
-		nGon.transX-=10;
-		nGon.rotate(0,0,0);
-	break;
-	case 67: // strafe right;
-		nGon.transX+=10;
-		nGon.rotate(0,0,0);
-	break;
-	case 80: // toggle parallel
-		nGon.parallel=!nGon.parallel;
-		nGon.rotate(0,0,0);
-	break;
-	case 37:
-		nGon.rotate(1,0,0);
-	break;
 
-
-	case 38:
-		nGon.rotate(0,1,0);
-	break;
-
-	case 39:
-		nGon.rotate(-1,0,0);
-	break;
-
-	case 40:
-		nGon.rotate(0,-1,0);
-	break;
-
-	case 83:
-		nGon.rotate(0,0,-1);
-	break;
-
-	case 90:
-		nGon.rotate(0,0,1);
-	break;
-	default:
-	break;
-	}
 }
 
 function PressHandler(e) {
 	bRightMouseDown=true;
-
+	if (e!='automate' && e.targetTouches) {
+ 		e.preventDefault();
+		oldMoveX = e.targetTouches[0].clientX;
+		oldMoveY = e.targetTouches[0].clientY;		
+	}
+	else if (e!='automate') {
+		 oldMoveX = e.clientX;     //firefox
+		 oldMoveY = e.clientY;     //firefox			
+	}
 	return false;
-//	if(window.event) mousegrabber.setCapture(true);
 	if(window.event) {
 		if (window.event.button==1) bLeftMouseDown=true;
 		else if (window.event.button==2) {bRightMouseDown=true;}
@@ -593,7 +517,6 @@ function PressHandler(e) {
 
 function UpHandler(e) {
 	
-//	if(window.event) mousegrabber.releaseCapture();	
 	if (typeof e.targetTouches=='undefined') {
 		if (e.button==0) {
 			bLeftMouseDown=true;
@@ -605,12 +528,7 @@ function UpHandler(e) {
 	return false;
 }
 
-function doClick(strText) {
-
-
-}
 	
-window.onresize = getWinSize;
 document.addEventListener('mouseup',UpHandler,true);
 document.addEventListener('touchend',UpHandler,true);
 document.addEventListener('keydown',KeyHandler,false);
