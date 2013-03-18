@@ -3,7 +3,7 @@
 
 
 <head>
-<script type="text/javascript" src="jquery.min.js"></script>
+<script type="text/javascript" src="../js/jquery.min.js"></script>
 
 <script>
 var r=150;
@@ -44,16 +44,29 @@ function loadObj() {
 					reference:$(this).attr("reference"),
 					index:$(this).attr("index"),
 					loop:($(this).attr("loop")=="true"?true:false),
+					initialValue:0,
+					easing:"sin",
+					iterativeValue:0,
 					axis:null,
 					value:null
 				};
 				$(this).find("axis").each(function() {
 					tx.axis=$(this).text();
 				});
+				$(this).find("initialValue").each(function() {
+					tx.value=parseFloat($(this).text());
+				});
 				$(this).find("value").each(function() {
 					tx.value=$(this).text();
 				});
+				$(this).find("easing").each(function() {
+					tx.easing=$(this).text();
+				});
+				$(this).find("iterativeValue").each(function() {
+					tx.iterativeValue=parseFloat($(this).text());
+				});
 				objects[$(this).attr("id")].render.translate[objects[$(this).attr("id")].render.translate.length]=tx;
+
 			});
 			$(this).find("scale").each(function() {
 				var sc={
@@ -177,6 +190,25 @@ function ngonAnimation() {
 				}
 			}
 		}
+		if (translate && translate.length>0) {
+			for (var j=0;j<translate.length;j++) {
+				var trans=translate[j];
+				if (trans && trans.type=="relative" && k==parseInt(trans.index) && trans.reference=="self" && trans.loop) {
+					if (trans.axis=="x") {
+						trans.value=trans.value+trans.iterativeValue;
+						ngon.translate([(Math.sin(trans.value)),0,0,trans.value]);
+					}
+					else if (trans.axis=="y") {
+						trans.value=trans.value+trans.iterativeValue;
+						ngon.translate([0,(Math.sin(trans.value)),0,trans.value]);
+					}
+					else if (trans.axis=="z") {
+						trans.value=trans.value+trans.iterativeValue;
+						ngon.translate([0,0,(Math.sin(trans.value)),trans.value]);
+					}
+				}
+			}
+		}
 	}
 	world.rotate(0,0,0);
 
@@ -185,9 +217,11 @@ function ngonAnimation() {
 
 
 </script>
-<script src="jf_3d.js"></script>
+<script src="COMMENTED OUT../js/jf_colorgrad.js"></script>
+<script src="../js/jf_3d.js"></script>
 
 
+<LINK rel="stylesheet" type="text/css" href="style.css">
 
 </head>
 

@@ -1,57 +1,56 @@
 <RadioJane>
 	<ThreeD>
-		<Objects>
-			<object id="box">
-				<vertices><![CDATA[
-				[//front
-					{x:-50,y:50,z:50,fillStyle:"#ff0000"},
-					{x:50,y:50,z:50,fillStyle:"#ff0000"},
-					{x:-50,y:-50,z:50,fillStyle:"#ff0000"},
-					{x:50,y:50,z:50,fillStyle:"#ff0000"},
-					{x:50,y:-50,z:50,fillStyle:"#ff0000"},
-					{x:-50,y:-50,z:50,fillStyle:"#ff0000"},
+		<Objects><object id="box">
+	<vertices><![CDATA[
+	[//front
+		{x:-50,y:50,z:50,fillStyle:"#ff0000"},
+		{x:50,y:50,z:50,fillStyle:"#ff0000"},
+		{x:-50,y:-50,z:50,fillStyle:"#ff0000"},
+		{x:50,y:50,z:50,fillStyle:"#ff0000"},
+		{x:50,y:-50,z:50,fillStyle:"#ff0000"},
+		{x:-50,y:-50,z:50,fillStyle:"#ff0000"},
 
-				//back
-					{x:50,y:50,z:-50,fillStyle:"#0000ff"},
-					{x:-50,y:50,z:-50,fillStyle:"#0000ff"},
-					{x:-50,y:-50,z:-50,fillStyle:"#0000ff"},
-					{x:50,y:50,z:-50,fillStyle:"#0000ff"},
-					{x:-50,y:-50,z:-50,fillStyle:"#0000ff"},
-					{x:50,y:-50,z:-50,fillStyle:"#0000ff"},
+	//back
+		{x:50,y:50,z:-50,fillStyle:"#0000ff"},
+		{x:-50,y:50,z:-50,fillStyle:"#0000ff"},
+		{x:-50,y:-50,z:-50,fillStyle:"#0000ff"},
+		{x:50,y:50,z:-50,fillStyle:"#0000ff"},
+		{x:-50,y:-50,z:-50,fillStyle:"#0000ff"},
+		{x:50,y:-50,z:-50,fillStyle:"#0000ff"},
 
-				//left
+	//left
 
-					{x:-50,y:-50,z:-50,fillStyle:"#00ff00"},
-					{x:-50,y:50,z:-50,fillStyle:"#00ff00"},
-					{x:-50,y:50,z:50,fillStyle:"#00ff00"},
-					{x:-50,y:50,z:50,fillStyle:"#00ff00"},
-					{x:-50,y:-50,z:50,fillStyle:"#00ff00"},
-					{x:-50,y:-50,z:-50,fillStyle:"#00ff00"},
+		{x:-50,y:-50,z:-50,fillStyle:"#00ff00"},
+		{x:-50,y:50,z:-50,fillStyle:"#00ff00"},
+		{x:-50,y:50,z:50,fillStyle:"#00ff00"},
+		{x:-50,y:50,z:50,fillStyle:"#00ff00"},
+		{x:-50,y:-50,z:50,fillStyle:"#00ff00"},
+		{x:-50,y:-50,z:-50,fillStyle:"#00ff00"},
 
-				// right
+	// right
 
-					{x:50,y:-50,z:-50,fillStyle:"#ffff00"},
-					{x:50,y:50,z:50,fillStyle:"#ffff00"},
-					{x:50,y:50,z:-50,fillStyle:"#ffff00"},
-					{x:50,y:50,z:50,fillStyle:"#ffff00"},
-					{x:50,y:-50,z:-50,fillStyle:"#ffff00"},
-					{x:50,y:-50,z:50,fillStyle:"#ffff00"},
-				// top
-					{x:-50,y:-50,z:-50,fillStyle:"#bb00bb"},
-					{x:50,y:-50,z:50,fillStyle:"#bb00bb"},
-					{x:50,y:-50,z:-50,fillStyle:"#bb00bb"},
-					{x:-50,y:-50,z:-50,fillStyle:"#bb00bb"},
-					{x:-50,y:-50,z:50,fillStyle:"#bb00bb"},
-					{x:50,y:-50,z:50,fillStyle:"#bb00bb"},
-				//bottom
-					{x:50,y:50,z:-50,fillStyle:"#ffb00f"},
-					{x:50,y:50,z:50,fillStyle:"#ffb00f"},
-					{x:-50,y:50,z:-50,fillStyle:"#ffb00f"},
-					{x:-50,y:50,z:-50,fillStyle:"#ffb00f"},
-					{x:50,y:50,z:50,fillStyle:"#ffb00f"},
-					{x:-50,y:50,z:50,fillStyle:"#ffb00f"}]
-				]]></vertices>
-			</object>
+		{x:50,y:-50,z:-50,fillStyle:"#ffff00"},
+		{x:50,y:50,z:50,fillStyle:"#ffff00"},
+		{x:50,y:50,z:-50,fillStyle:"#ffff00"},
+		{x:50,y:50,z:50,fillStyle:"#ffff00"},
+		{x:50,y:-50,z:-50,fillStyle:"#ffff00"},
+		{x:50,y:-50,z:50,fillStyle:"#ffff00"},
+	// top
+		{x:-50,y:-50,z:-50,fillStyle:"#bb00bb"},
+		{x:50,y:-50,z:50,fillStyle:"#bb00bb"},
+		{x:50,y:-50,z:-50,fillStyle:"#bb00bb"},
+		{x:-50,y:-50,z:-50,fillStyle:"#bb00bb"},
+		{x:-50,y:-50,z:50,fillStyle:"#bb00bb"},
+		{x:50,y:-50,z:50,fillStyle:"#bb00bb"},
+	//bottom
+		{x:50,y:50,z:-50,fillStyle:"#ffb00f"},
+		{x:50,y:50,z:50,fillStyle:"#ffb00f"},
+		{x:-50,y:50,z:-50,fillStyle:"#ffb00f"},
+		{x:-50,y:50,z:-50,fillStyle:"#ffb00f"},
+		{x:50,y:50,z:50,fillStyle:"#ffb00f"},
+		{x:-50,y:50,z:50,fillStyle:"#ffb00f"}]
+	]]></vertices>
+</object>
 		</Objects>
 		<Render>
 			<Copies id="box">
@@ -60,8 +59,20 @@
 			<Translations objectId="box">
 				<translation type="relative" reference="previous" id="box" index="all" loop="false">
 					<axis>y</axis>
-					<value>-(height-5)</value>
+					<value>-(height+30)</value>
 				</translation>
+				<translation type="relative" reference="self" id="box" index="2" loop="true">
+					<axis>y</axis>
+					<initialValue>.01</initialValue>
+					<iterativeValue>-.1</iterativeValue>
+					<easing>sin</easing>
+				</translation> 
+				<translation type="relative" reference="self" id="box" index="0" loop="true">
+					<axis>y</axis>
+					<initialValue>.01</initialValue>
+					<iterativeValue>.05</iterativeValue>
+					<easing>sin</easing>
+				</translation> 
 				<scale type="relative" reference="previous" id="box" index="all" loop="false">
 					<axis>all</axis>
 					<value>.50</value>
