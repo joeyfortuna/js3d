@@ -63,14 +63,23 @@
 				</translation>
 				<translation type="relative" reference="self" id="box" index="2" loop="true">
 					<axis>y</axis>
-					<initialValue>.01</initialValue>
-					<iterativeValue>-.1</iterativeValue>
+					<maxValue>5</maxValue>
+					<initialValue>0</initialValue>
+					<speed>-.5</speed>
+					<easing>sin</easing>
+				</translation> 
+				<translation type="relative" reference="self" id="box" index="1" loop="true">
+					<axis>x</axis>
+					<maxValue>5</maxValue>
+					<initialValue>10</initialValue>
+					<speed>-.5</speed>
 					<easing>sin</easing>
 				</translation> 
 				<translation type="relative" reference="self" id="box" index="0" loop="true">
-					<axis>y</axis>
-					<initialValue>.01</initialValue>
-					<iterativeValue>.05</iterativeValue>
+					<axis>x</axis>
+					<maxValue>18</maxValue>
+					<initialValue>30</initialValue>
+					<speed>.5</speed>
 					<easing>sin</easing>
 				</translation> 
 				<scale type="relative" reference="previous" id="box" index="all" loop="false">
@@ -79,7 +88,7 @@
 				</scale>
 				<rotate id="box" index="0" loop="true">
 					<axis>y</axis>
-					<value>1</value>
+					<value>5</value>
 				</rotate>
 				<rotate id="box" index="1" loop="true">
 					<axis>x</axis>

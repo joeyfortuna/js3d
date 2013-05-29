@@ -3,7 +3,7 @@
 
 
 <head>
-<script type="text/javascript" src="../js/jquery.min.js"></script>
+<script type="text/javascript" src="jquery.min.js"></script>
 
 <script>
 var r=150;
@@ -59,11 +59,14 @@ function loadObj() {
 				$(this).find("value").each(function() {
 					tx.value=$(this).text();
 				});
+				$(this).find("maxValue").each(function() {
+					tx.maxValue=parseFloat($(this).text());
+				});
 				$(this).find("easing").each(function() {
 					tx.easing=$(this).text();
 				});
-				$(this).find("iterativeValue").each(function() {
-					tx.iterativeValue=parseFloat($(this).text());
+				$(this).find("speed").each(function() {
+					tx.speed=parseFloat($(this).text());
 				});
 				objects[$(this).attr("id")].render.translate[objects[$(this).attr("id")].render.translate.length]=tx;
 
@@ -194,17 +197,17 @@ function ngonAnimation() {
 			for (var j=0;j<translate.length;j++) {
 				var trans=translate[j];
 				if (trans && trans.type=="relative" && k==parseInt(trans.index) && trans.reference=="self" && trans.loop) {
+					if (trans.axis=="y") {
+						trans.value=trans.value+trans.speed;
+						ngon.translate([0,trans.maxValue*(Math.sin(trans.value)),0,trans.value]);
+					}
 					if (trans.axis=="x") {
-						trans.value=trans.value+trans.iterativeValue;
-						ngon.translate([(Math.sin(trans.value)),0,0,trans.value]);
+						trans.value=trans.value+trans.speed;
+						ngon.translate([trans.maxValue*(Math.sin(trans.value)),0,0,trans.value]);
 					}
-					else if (trans.axis=="y") {
-						trans.value=trans.value+trans.iterativeValue;
-						ngon.translate([0,(Math.sin(trans.value)),0,trans.value]);
-					}
-					else if (trans.axis=="z") {
-						trans.value=trans.value+trans.iterativeValue;
-						ngon.translate([0,0,(Math.sin(trans.value)),trans.value]);
+					if (trans.axis=="z") {
+						trans.value=trans.value+trans.speed;
+						ngon.translate([0,0,trans.maxValue*(Math.sin(trans.value)),trans.value]);
 					}
 				}
 			}
@@ -217,8 +220,7 @@ function ngonAnimation() {
 
 
 </script>
-<script src="COMMENTED OUT../js/jf_colorgrad.js"></script>
-<script src="../js/jf_3d.js"></script>
+<script src="jf_3d.js"></script>
 
 
 <LINK rel="stylesheet" type="text/css" href="style.css">
